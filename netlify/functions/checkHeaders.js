@@ -1,61 +1,41 @@
-const fetch = require('node-fetch');
+const axios = require('axios');
 
 exports.handler = async (event) => {
   try {
-    const { url, method = 'GET', body = null } = JSON.parse(event.body);
-
-    if (!url || !/^https?:\/\//i.test(url)) {
+    const { url } = JSON.parse(event.body);
+    if (!url) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid URL format' }),
+        body: JSON.stringify({ error: 'Missing URL' })
       };
     }
 
-    const fetchOptions = {
-      method: method.toUpperCase(),
-      redirect: 'follow',
-      headers: {
-        'User-Agent': 'ClickjackingTester/1.0',
-        'Content-Type': 'application/json',
-      },
-    };
+    const response = await axios.head(url, { maxRedirects: 5 });
+    const headers = response.headers;
 
-    if (method.toUpperCase() === 'POST' && body) {
-      fetchOptions.body = JSON.stringify(body);
-    }
+    const xFrameOptions = headers['x-frame-options'];
+    const contentSecurityPolicy = headers['content-security-policy'];
+    const cspFrameAncestors = contentSecurityPolicy?.includes('frame-ancestors');
 
-    const res = await fetch(url, fetchOptions);
+    const missingHeaders = [];
+    if (!xFrameOptions) missingHeaders.push('X-Frame-Options');
+    if (!contentSecurityPolicy || !cspFrameAncestors) missingHeaders.push('CSP frame-ancestors');
 
-    const headers = {};
-    res.headers.forEach((value, key) => {
-      headers[key.toLowerCase()] = value;
-    });
-
-    const missing = [];
-    const xfo = headers['x-frame-options'];
-    const csp = headers['content-security-policy'];
-
-    if (!xfo) missing.push('X-Frame-Options');
-    if (!csp || !csp.includes('frame-ancestors')) missing.push('Content-Security-Policy (frame-ancestors)');
-
-    const vulnerable = missing.length > 0;
+    const isProtected = missingHeaders.length === 0;
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         url,
-        method,
-        vulnerable,
-        missing,
-        protection: vulnerable ? 'Missing clickjacking protection' : 'Clickjacking protection in place',
-        headers,
-      }),
+        protection: isProtected ? 'Protected' : 'Not Protected',
+        missingHeaders,
+        headers
+      })
     };
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Server error: ' + err.message }),
+      body: JSON.stringify({ error: error.message || 'Server Error' })
     };
   }
 };
