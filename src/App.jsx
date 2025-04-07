@@ -1,32 +1,27 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 export default function App() {
   const [url, setUrl] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
-
+  const [iframeResult, setIframeResult] = useState(null);
   const iframeRef = useRef(null);
 
-  const log = (msg) => setDebugInfo(prev => [...prev, msg]);
-
-  const validateUrl = (input) => {
-    if (!input.startsWith('http')) {
-      return 'https://' + input;
+  const validateUrl = (inputUrl) => {
+    if (!inputUrl.startsWith('http://') && !inputUrl.startsWith('https://')) {
+      return 'https://' + inputUrl;
     }
-    return input;
+    return inputUrl;
   };
 
-  const checkURL = async () => {
+  const checkHeaders = async () => {
     setError(null);
     setResult(null);
+    setIframeResult(null);
     setIsLoading(true);
-    setDebugInfo([]);
 
     const formattedUrl = validateUrl(url);
-    log('Checking: ' + formattedUrl);
 
     try {
       const res = await fetch('/.netlify/functions/checkHeaders', {
@@ -34,119 +29,72 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: formattedUrl })
       });
-
       const data = await res.json();
-
-      if (res.ok) {
-        setResult({
-          ...data,
-          url: formattedUrl,
-          time: new Date().toUTCString()
-        });
-        log('Response received.');
-      } else {
-        throw new Error(data.error || 'Unknown error');
-      }
+      if (res.ok) setResult(data);
+      else setError(data.error || 'Error checking URL');
     } catch (err) {
-      setError('Request failed: ' + err.message);
-      log('Error: ' + err.message);
-    } finally {
-      setIsLoading(false);
+      setError('Request failed');
     }
 
-    if (iframeRef.current) {
-      iframeRef.current.src = formattedUrl;
+    try {
+      if (iframeRef.current) {
+        iframeRef.current.onload = () => {
+          setIframeResult('Iframe loaded — possibly vulnerable');
+          setIsLoading(false);
+        };
+        iframeRef.current.onerror = () => {
+          setIframeResult('Iframe blocked — protected');
+          setIsLoading(false);
+        };
+        iframeRef.current.src = formattedUrl;
+      }
+    } catch (e) {
+      setIframeResult('Error loading iframe');
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-100">
-      {/* Left Panel - Iframe */}
-      <div className="w-1/2 p-5 relative">
-        {isLoading && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-lg font-bold text-blue-500">
-            Checking...
-          </div>
-        )}
-        <iframe
-          ref={iframeRef}
-          title="Test Frame"
-          className="w-full h-full border-2 border-red-400 rounded-lg opacity-90"
-        />
-        <div className="absolute top-5 left-5 w-[calc(100%-40px)] h-[calc(100%-40px)] bg-white bg-opacity-50 rounded-lg pointer-events-none"></div>
-      </div>
+    <div className="min-h-screen bg-gray-100 p-8">
+      <h1 className="text-3xl font-bold mb-4">Clickjacking Detector</h1>
+      <input
+        className="p-2 border rounded w-full max-w-md mb-4"
+        type="text"
+        placeholder="Enter a website URL"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+      />
+      <button
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        onClick={checkHeaders}
+      >
+        Test
+      </button>
 
-      {/* Right Panel - Input & Results */}
-      <div className="w-1/2 bg-white shadow-xl rounded-xl p-6 flex flex-col justify-start items-center overflow-y-auto">
-        <img
-          src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
-          alt="Quasar CyberTech Logo"
-          className="w-36 mb-4"
-        />
-        <h1 className="text-2xl font-bold mb-4">Clickjacking Test</h1>
+      {isLoading && <p className="text-gray-500 mt-4">Loading...</p>}
 
-        <div className="flex w-4/5 mb-4">
-          <input
-            className="flex-grow p-2 border border-gray-300 rounded-l-lg"
-            type="text"
-            placeholder="Enter website URL (e.g., https://example.com)"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-          />
-          <button
-            onClick={checkURL}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg"
-          >
-            Test
-          </button>
+      {result && (
+        <div className="mt-6 p-4 bg-white rounded shadow max-w-xl">
+          <h2 className="text-xl font-semibold mb-2">Header Scan Result:</h2>
+          <p><strong>Protection:</strong> {result.protection}</p>
+          <p><strong>Missing Headers:</strong> {result.missing.join(', ') || 'None'}</p>
+          <pre className="mt-2 text-sm bg-gray-100 p-2 rounded overflow-x-auto">
+            {JSON.stringify(result.headers, null, 2)}
+          </pre>
         </div>
+      )}
 
-        {result && (
-          <div className="w-4/5 p-4 bg-red-50 rounded-lg mb-4 text-sm">
-            <p><strong>Site:</strong> {result.url}</p>
-            <p><strong>Time:</strong> {result.time}</p>
-            <p>
-              <strong>Missing Headers:</strong>{' '}
-              <span className="text-red-600 font-bold">
-                {result.protection || 'None'}
-              </span>
-            </p>
-          </div>
-        )}
+      {iframeResult && (
+        <div className="mt-4 p-4 bg-white rounded shadow max-w-xl">
+          <h2 className="text-xl font-semibold mb-2">Iframe Test Result:</h2>
+          <p>{iframeResult}</p>
+        </div>
+      )}
 
-        {result && (
-          <div
-            className={`w-4/5 p-3 text-center font-bold text-white rounded ${
-              result.protection === 'None' ? 'bg-red-600' : 'bg-green-600'
-            }`}
-          >
-            Site is {result.protection === 'None' ? 'vulnerable' : 'not vulnerable'} to Clickjacking
-          </div>
-        )}
+      {error && <p className="text-red-500 mt-4">{error}</p>}
 
-        {error && (
-          <div className="text-red-600 text-sm mt-2">{error}</div>
-        )}
-
-        <button
-          onClick={() => setShowDebug(!showDebug)}
-          className="mt-4 text-xs text-gray-500 underline"
-        >
-          {showDebug ? 'Hide' : 'Show'} Debug Info
-        </button>
-
-        {showDebug && (
-          <div className="w-4/5 p-3 mt-2 bg-gray-100 rounded-lg text-xs text-gray-700 max-h-32 overflow-y-auto">
-            {debugInfo.map((log, idx) => (
-              <div key={idx}>{log}</div>
-            ))}
-          </div>
-        )}
-
-        <p className="mt-6 text-xs text-gray-500 text-center">
-          Payload developed by Quasar CyberTech Security Team ©<br />
-          Made in India with <span className="text-red-600">❤️</span>
-        </p>
+      <div className="mt-6 border-2 border-gray-300 rounded-lg overflow-hidden w-full max-w-xl h-64">
+        <iframe ref={iframeRef} title="Test Iframe" className="w-full h-full" sandbox="allow-scripts allow-forms" />
       </div>
     </div>
   );
