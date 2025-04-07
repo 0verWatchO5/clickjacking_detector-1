@@ -1,36 +1,32 @@
-const axios = require('axios')
+const fetch = require('node-fetch');
 
 exports.handler = async (event) => {
-  const { url } = JSON.parse(event.body)
+  const { url } = JSON.parse(event.body);
 
   try {
-    const response = await axios.get(url, { timeout: 5000 })
+    const res = await fetch(url);
+    const headers = res.headers.raw();
 
-    const xFrame = response.headers['x-frame-options'] || ''
-    const csp = response.headers['content-security-policy'] || ''
+    const xfo = headers['x-frame-options'];
+    const csp = headers['content-security-policy'];
 
-    let protection = 'None'
-
-    if (xFrame.includes('DENY') || xFrame.includes('SAMEORIGIN')) {
-      protection = 'X-Frame-Options'
-    } else if (csp.includes('frame-ancestors')) {
-      protection = 'Content-Security-Policy'
+    let protection = [];
+    if (!xfo) protection.push('X-Frame-Options');
+    if (!csp || !csp.some(h => h.includes('frame-ancestors'))) {
+      protection.push('CSP frame-ancestors');
     }
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        protection,
-        headers: {
-          'x-frame-options': xFrame,
-          'content-security-policy': csp,
-        },
+        protection: protection.length ? protection.join(', ') : 'None',
+        headers,
       }),
-    }
-  } catch (error) {
+    };
+  } catch (err) {
     return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'Could not fetch URL' }),
-    }
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message }),
+    };
   }
-}
+};
