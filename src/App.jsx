@@ -30,9 +30,17 @@ export default function App() {
 
     try {
       const res = await axios.post('/.netlify/functions/checkHeaders', { url });
+      const headers = res.data.headers || {};
+
+      const xfo = headers['x-frame-options'];
+      const csp = headers['content-security-policy'];
+
+      const hasXFO = xfo && xfo.toLowerCase().includes('deny' || 'sameorigin');
+      const hasCSP = csp && csp.toLowerCase().includes('frame-ancestors');
+
+      const isVulnerable = !(hasXFO || hasCSP);
+
       setResult(res.data);
-      const protection = res.data.protection || "None";
-      const isVulnerable = protection === "None";
 
       setTestResults({
         isVisible: true,
@@ -41,10 +49,10 @@ export default function App() {
         missingHeaders: isVulnerable
           ? 'X-Frame-Options, CSP frame-ancestors'
           : 'None - Site is protected',
-        isVulnerable: isVulnerable,
-        reason: protection === "None"
-          ? "Missing clickjacking headers"
-          : "Proper headers detected"
+        isVulnerable,
+        reason: isVulnerable
+          ? 'Missing X-Frame-Options or frame-ancestors directive in CSP'
+          : 'Proper protection headers are in place'
       });
 
       if (testFrameRef.current) {
@@ -93,7 +101,6 @@ export default function App() {
               className="w-full h-full border-2 border-red-500 rounded-lg opacity-90"
               title="Test Frame"
             />
-            {/* Overlay only on iframe area */}
             <div className="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10" />
           </div>
 
@@ -106,7 +113,7 @@ export default function App() {
         </div>
 
         {/* Right Panel - Controls & Results */}
-        <div className="w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative">
+        <div className="w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative z-0">
           <img
             src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
             alt="Quasar CyberTech Logo"
