@@ -61,11 +61,10 @@ export default function App() {
               iframeDoc.body.innerHTML &&
               iframeDoc.body.innerHTML.trim().length > 0;
           } catch (e) {
-            // Cross-origin protection - assume iframe could not render
-            rendersContent = false;
+            rendersContent = false; // Assume protection (cross-origin)
           }
 
-          const isVulnerable = rendersContent && missingHeaders.length > 0;
+          const isVulnerable = missingHeaders.length > 0 && rendersContent;
 
           setTestResults({
             isVisible: true,
@@ -75,9 +74,9 @@ export default function App() {
             isVulnerable,
             reason: isVulnerable
               ? 'Page is embeddable and missing required security headers'
-              : rendersContent
-              ? 'Page rendered but has necessary headers'
-              : 'Page refused to render in iframe (likely protected)',
+              : !rendersContent
+              ? 'Page refused to render in iframe (likely protected)'
+              : 'Page rendered but has necessary headers',
             rawHeaders: JSON.stringify(headers, null, 2)
           });
 
