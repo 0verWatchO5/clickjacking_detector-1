@@ -11,7 +11,8 @@ export default function App() {
     testTime: '-',
     missingHeaders: '-',
     isVulnerable: null,
-    reason: ''
+    reason: '',
+    rawHeaders: ''
   });
 
   const testFrameRef = useRef(null);
@@ -26,7 +27,8 @@ export default function App() {
       testTime: '-',
       missingHeaders: '-',
       isVulnerable: null,
-      reason: ''
+      reason: '',
+      rawHeaders: ''
     });
 
     try {
@@ -36,30 +38,53 @@ export default function App() {
       const xfo = headers['x-frame-options'];
       const csp = headers['content-security-policy'];
 
-      const hasXFO = xfo && /(deny|sameorigin)/i.test(xfo);
+      const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
       const hasCSP = csp && /frame-ancestors/i.test(csp);
 
-      const missing = [];
-      if (!hasXFO) missing.push('X-Frame-Options');
-      if (!hasCSP) missing.push('CSP frame-ancestors');
+      const missingHeaders = [];
+      if (!hasXFO) missingHeaders.push('X-Frame-Options');
+      if (!hasCSP) missingHeaders.push('CSP frame-ancestors');
 
-      const isVulnerable = missing.length > 0;
-
-      setResult(res.data);
-
-      setTestResults({
-        isVisible: true,
-        siteUrl: url,
-        testTime: new Date().toUTCString(),
-        missingHeaders: missing.length > 0 ? missing.join(', ') : 'None - Site is protected',
-        isVulnerable,
-        reason: isVulnerable
-          ? `Missing ${missing.join(' and ')}`
-          : 'Proper protection headers are in place'
-      });
-
+      // Load site into iframe
       if (testFrameRef.current) {
-        testFrameRef.current.src = url;
+        const iframe = testFrameRef.current;
+        iframe.src = url;
+
+        setTimeout(() => {
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            const rendersContent = iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML.trim().length > 0;
+
+            const isVulnerable = rendersContent && missingHeaders.length > 0;
+
+            setTestResults({
+              isVisible: true,
+              siteUrl: url,
+              testTime: new Date().toUTCString(),
+              missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
+              isVulnerable,
+              reason: isVulnerable
+                ? 'Page is embeddable and missing required security headers'
+                : 'Page is either protected via headers or refused to render in iframe',
+              rawHeaders: JSON.stringify(headers, null, 2)
+            });
+
+            setResult(res.data);
+          } catch (e) {
+            // Iframe blocked (likely due to CSP/XFO)
+            setTestResults({
+              isVisible: true,
+              siteUrl: url,
+              testTime: new Date().toUTCString(),
+              missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
+              isVulnerable: false,
+              reason: 'Page refused to render in iframe (likely protected)',
+              rawHeaders: JSON.stringify(headers, null, 2)
+            });
+
+            setResult(res.data);
+          }
+        }, 2000);
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Request failed');
@@ -142,12 +167,8 @@ export default function App() {
 
           {testResults.isVisible && (
             <div className="w-4/5 p-4 bg-red-50 rounded-lg mb-4 text-black">
-              <p>
-                <strong>Site:</strong> {testResults.siteUrl}
-              </p>
-              <p>
-                <strong>Time:</strong> {testResults.testTime}
-              </p>
+              <p><strong>Site:</strong> {testResults.siteUrl}</p>
+              <p><strong>Time:</strong> {testResults.testTime}</p>
               <p>
                 <strong>Missing Security Headers:</strong>
                 <span className="text-red-600 font-bold"> {testResults.missingHeaders}</span>
@@ -162,6 +183,13 @@ export default function App() {
               }`}
             >
               Site is {testResults.isVulnerable ? 'vulnerable' : 'not vulnerable'} to Clickjacking
+            </div>
+          )}
+
+          {testResults.rawHeaders && (
+            <div className="w-4/5 bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-60 mt-4 font-mono">
+              <strong>Raw Response Headers:</strong>
+              <pre>{testResults.rawHeaders}</pre>
             </div>
           )}
 
