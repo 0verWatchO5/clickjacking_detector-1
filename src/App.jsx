@@ -37,71 +37,58 @@ export default function App() {
 
       const xfo = headers['x-frame-options'];
       const csp = headers['content-security-policy'];
-
       const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
-      const hasCSP = csp && /frame-ancestors/i.test(csp);
+      const hasCSPFrameAncestors = csp && /frame-ancestors/i.test(csp);
 
       const missingHeaders = [];
-      if (!hasXFO) missingHeaders.push('X-Frame-Options');
-      if (!hasCSP) missingHeaders.push('CSP frame-ancestors');
+      if (!xfo) missingHeaders.push('X-Frame-Options');
+      if (!csp || !hasCSPFrameAncestors) missingHeaders.push('CSP frame-ancestors');
 
-      let rendersContent = false;
-      const iframe = testFrameRef.current;
+      if (testFrameRef.current) {
+        const iframe = testFrameRef.current;
+        iframe.src = url;
 
-      const loadPromise = new Promise((resolve) => {
-        if (iframe) {
-          iframe.onload = () => {
-            try {
-              const doc = iframe.contentDocument || iframe.contentWindow.document;
-              const htmlCheck = doc && doc.body && doc.body.innerHTML.trim().length > 0;
-              const altCheck = iframe.contentWindow.length !== 0;
-              rendersContent = htmlCheck || altCheck;
-            } catch (e) {
-              rendersContent = false;
-            }
-            resolve();
-          };
-          iframe.onerror = () => {
+        setTimeout(() => {
+          let rendersContent = false;
+
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            rendersContent =
+              iframeDoc &&
+              iframeDoc.body &&
+              iframeDoc.body.innerHTML &&
+              iframeDoc.body.innerHTML.trim().length > 0;
+          } catch (e) {
             rendersContent = false;
-            resolve();
-          };
-          iframe.src = url;
-        } else {
-          resolve();
-        }
-      });
+          }
 
-      const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 3000));
-      await Promise.race([loadPromise, timeoutPromise]);
+          const isBlocked = !rendersContent;
+          const isVulnerable = missingHeaders.length > 0 && rendersContent;
 
-      const isCurrentlyVulnerable = missingHeaders.length > 0 && rendersContent;
+          let reason = '';
+          if (isVulnerable) {
+            reason = 'Page is embeddable and missing required security headers';
+          } else if (isBlocked) {
+            reason = 'Page refused to render in iframe (likely protected)';
+          } else {
+            reason = 'Page rendered but has necessary headers';
+          }
 
-      setTestResults({
-        isVisible: true,
-        siteUrl: url,
-        testTime: new Date().toUTCString(),
-        missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
-        isVulnerable: isCurrentlyVulnerable,
-        reason: isCurrentlyVulnerable
-          ? 'Page is embeddable and missing required security headers'
-          : missingHeaders.length > 0
-            ? 'Page rendered but has necessary headers'
-            : 'Page refused to render in iframe (likely protected by headers or other mechanisms)',
-        rawHeaders: JSON.stringify(headers, null, 2)
-      });
+          setTestResults({
+            isVisible: true,
+            siteUrl: url,
+            testTime: new Date().toUTCString(),
+            missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
+            isVulnerable,
+            reason,
+            rawHeaders: JSON.stringify(headers, null, 2)
+          });
 
-      setResult(res.data);
+          setResult(res.data);
+        }, 2000);
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Request failed');
-      setTestResults({
-        isVisible: true,
-        siteUrl: url,
-        testTime: new Date().toUTCString(),
-        missingHeaders: 'Error fetching headers',
-        isVulnerable: null,
-        reason: 'Error fetching headers',
-        rawHeaders: ''
-      });
     }
   };
 
@@ -115,8 +102,22 @@ export default function App() {
       }}
     >
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
-        <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">About</a>
-        <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">Mitigation Guide</a>
+        <a
+          href="/about.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline text-yellow-300"
+        >
+          About
+        </a>
+        <a
+          href="/defensecj.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline text-yellow-300"
+        >
+          Mitigation Guide
+        </a>
       </div>
 
       <div className="flex w-full h-full">
