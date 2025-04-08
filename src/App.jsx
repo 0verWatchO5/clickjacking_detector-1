@@ -47,7 +47,7 @@ export default function App() {
     }
   };
   return (
-    <div className="flex h-screen w-full overflow-hidden z-50" style={{ 
+    <div className="flex h-screen z-50" style={{ 
       fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 
       backgroundColor: '#4d0c26', 
       color: '#f3cda2'
