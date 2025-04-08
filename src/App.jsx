@@ -46,7 +46,6 @@ export default function App() {
       if (!hasCSP) missingHeaders.push('CSP frame-ancestors');
 
       let rendersContent = false;
-      // Attempt to load site into iframe with a timeout
       const loadPromise = new Promise((resolve) => {
         if (testFrameRef.current) {
           const iframe = testFrameRef.current;
@@ -59,12 +58,12 @@ export default function App() {
                 iframeDoc.body.innerHTML &&
                 iframeDoc.body.innerHTML.trim().length > 0;
             } catch (e) {
-              rendersContent = false; // Assume protection (cross-origin)
+              rendersContent = false;
             }
             resolve();
           };
           iframe.onerror = () => {
-            rendersContent = false; // Error loading, assume protected
+            rendersContent = false;
             resolve();
           };
           iframe.src = url;
@@ -73,24 +72,24 @@ export default function App() {
         }
       });
 
-      // Set a timeout to handle cases where the site doesn't load or takes too long
       const timeoutPromise = new Promise((resolve) => {
         setTimeout(() => {
           resolve();
-        }, 3000); // Adjust timeout as needed
+        }, 3000);
       });
 
       await Promise.race([loadPromise, timeoutPromise]);
 
-      const isVulnerable = missingHeaders.length > 0 && rendersContent;
+      const isCurrentlyVulnerable = missingHeaders.length > 0 && rendersContent;
+      const isCurrentlyNotVulnerable = !isCurrentlyVulnerable;
 
       setTestResults({
         isVisible: true,
         siteUrl: url,
         testTime: new Date().toUTCString(),
         missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
-        isVulnerable,
-        reason: isVulnerable
+        isVulnerable: isCurrentlyVulnerable,
+        reason: isCurrentlyVulnerable
           ? 'Page is embeddable and missing required security headers'
           : missingHeaders.length > 0
             ? 'Page rendered but has necessary headers'
