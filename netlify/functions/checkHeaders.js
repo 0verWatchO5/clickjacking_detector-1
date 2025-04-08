@@ -1,41 +1,49 @@
 const axios = require('axios');
+const dns = require('dns').promises;
 
 exports.handler = async (event) => {
   try {
-    const { url } = JSON.parse(event.body);
-    if (!url) {
+    const { url } = JSON.parse(event.body || '{}');
+
+    if (!url || !/^https?:\/\//i.test(url)) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Missing URL' })
+        body: JSON.stringify({ error: 'Invalid URL' })
       };
     }
 
-    const response = await axios.head(url, { maxRedirects: 5 });
-    const headers = response.headers;
+    // Extract hostname to resolve IP
+    const { hostname } = new URL(url);
+    let ip = 'Unavailable';
+    try {
+      const addresses = await dns.lookup(hostname);
+      ip = addresses.address;
+    } catch (err) {
+      ip = 'Could not resolve IP';
+    }
 
-    const xFrameOptions = headers['x-frame-options'];
-    const contentSecurityPolicy = headers['content-security-policy'];
-    const cspFrameAncestors = contentSecurityPolicy?.includes('frame-ancestors');
+    // Make HEAD request to fetch headers
+    const response = await axios.head(url, {
+      maxRedirects: 5,
+      validateStatus: () => true,
+      timeout: 5000
+    });
 
-    const missingHeaders = [];
-    if (!xFrameOptions) missingHeaders.push('X-Frame-Options');
-    if (!contentSecurityPolicy || !cspFrameAncestors) missingHeaders.push('CSP frame-ancestors');
-
-    const isProtected = missingHeaders.length === 0;
+    const headers = Object.fromEntries(
+      Object.entries(response.headers).map(([key, value]) => [key.toLowerCase(), value])
+    );
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        url,
-        protection: isProtected ? 'Protected' : 'Not Protected',
-        missingHeaders,
-        headers
+        headers,
+        ip
       })
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message || 'Server Error' })
+      body: JSON.stringify({ error: 'Failed to fetch headers or resolve IP' })
     };
   }
 };

@@ -8,11 +8,13 @@ export default function App() {
   const [testResults, setTestResults] = useState({
     isVisible: false,
     siteUrl: '-',
+    ipAddress: '-',
     testTime: '-',
     missingHeaders: '-',
     isVulnerable: null,
     reason: '',
-    rawHeaders: ''
+    rawHeaders: '',
+    shareLink: ''
   });
 
   const testFrameRef = useRef(null);
@@ -24,16 +26,19 @@ export default function App() {
     setTestResults({
       isVisible: false,
       siteUrl: '-',
+      ipAddress: '-',
       testTime: '-',
       missingHeaders: '-',
       isVulnerable: null,
       reason: '',
-      rawHeaders: ''
+      rawHeaders: '',
+      shareLink: ''
     });
 
     try {
       const res = await axios.post('/.netlify/functions/checkHeaders', { url });
       const headers = res.data.headers || {};
+      const ipAddress = res.data.ip || '-'; // Make sure your backend includes IP in the response
 
       const xfo = headers['x-frame-options'];
       const csp = headers['content-security-policy'];
@@ -57,7 +62,7 @@ export default function App() {
                 iframeDoc.body &&
                 iframeDoc.body.innerHTML &&
                 iframeDoc.body.innerHTML.trim().length > 0;
-            } catch (e) {
+            } catch {
               rendersContent = false;
             }
             resolve();
@@ -72,20 +77,15 @@ export default function App() {
         }
       });
 
-      const timeoutPromise = new Promise((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 3000);
-      });
-
+      const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 3000));
       await Promise.race([loadPromise, timeoutPromise]);
 
       const isCurrentlyVulnerable = missingHeaders.length > 0 && rendersContent;
-      const isCurrentlyNotVulnerable = !isCurrentlyVulnerable;
 
       setTestResults({
         isVisible: true,
         siteUrl: url,
+        ipAddress,
         testTime: new Date().toUTCString(),
         missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
         isVulnerable: isCurrentlyVulnerable,
@@ -93,8 +93,9 @@ export default function App() {
           ? 'Page is embeddable and missing required security headers'
           : missingHeaders.length > 0
             ? 'Page rendered but has necessary headers'
-            : 'Page refused to render in iframe (likely protected by headers or other mechanisms)',
-        rawHeaders: JSON.stringify(headers, null, 2)
+            : 'Page refused to render in iframe (likely protected)',
+        rawHeaders: JSON.stringify(headers, null, 2),
+        shareLink: `https://clickjacker.io/result?url=${encodeURIComponent(url)}`
       });
 
       setResult(res.data);
@@ -104,11 +105,13 @@ export default function App() {
       setTestResults({
         isVisible: true,
         siteUrl: url,
+        ipAddress: '-',
         testTime: new Date().toUTCString(),
         missingHeaders: 'Error fetching headers',
         isVulnerable: null,
         reason: 'Error fetching headers',
-        rawHeaders: ''
+        rawHeaders: '',
+        shareLink: ''
       });
     }
   };
@@ -122,47 +125,22 @@ export default function App() {
         color: '#f3cda2'
       }}
     >
-      {/* NAVBAR - top right corner */}
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
-        <a
-          href="/about.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:underline text-yellow-300"
-        >
-          About
-        </a>
-        <a
-          href="/defensecj.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:underline text-yellow-300"
-        >
-          Mitigation Guide
-        </a>
+        <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">About</a>
+        <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">Mitigation Guide</a>
       </div>
 
       <div className="flex w-full h-full">
-        {/* Left Panel - Iframe Test Area */}
+        {/* Left Panel */}
         <div className="w-1/2 p-5 relative">
           <div className="w-full h-full relative">
-            <iframe
-              ref={testFrameRef}
-              className="w-full h-full border-2 border-red-500 rounded-lg opacity-90"
-              title="Test Frame"
-            />
+            <iframe ref={testFrameRef} className="w-full h-full border-2 border-red-500 rounded-lg opacity-90" title="Test Frame" />
             <div className="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10" />
           </div>
-
-          <canvas
-            ref={testCanvasRef}
-            width="5"
-            height="5"
-            className="absolute top-0 left-0 opacity-0 pointer-events-none"
-          />
+          <canvas ref={testCanvasRef} width="5" height="5" className="absolute top-0 left-0 opacity-0 pointer-events-none" />
         </div>
 
-        {/* Right Panel - Controls & Results */}
+        {/* Right Panel */}
         <div className="w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative z-0">
           <img
             src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
@@ -187,9 +165,20 @@ export default function App() {
             </button>
           </div>
 
+          {/* Share Result */}
+          {testResults.isVisible && (
+            <div className="text-sm text-yellow-300 mb-2">
+              Share result via:&nbsp;
+              <a href={testResults.shareLink} className="underline" target="_blank" rel="noopener noreferrer">
+                {testResults.shareLink}
+              </a>
+            </div>
+          )}
+
           {testResults.isVisible && (
             <div className="w-4/5 p-4 bg-red-50 rounded-lg mb-4 text-black">
               <p><strong>Site:</strong> {testResults.siteUrl}</p>
+              <p><strong>IP Address:</strong> {testResults.ipAddress}</p>
               <p><strong>Time:</strong> {testResults.testTime}</p>
               <p>
                 <strong>Missing Security Headers:</strong>
