@@ -54,10 +54,10 @@ export default function App() {
       color: '#f3cda2'
     }}>
       <div className="absolute top-4 right-4 flex gap-4 text-sm">
-        <a href="/Quasar%20Company%20Template.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">
+        <a href="/Quasar_Company_Template.html" target="_blank" rel="noopener noreferrer">
           Company Template
         </a>
-        <a href="/clickjacking_mitigation_Guide.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">
+        <a href="/clickjacking_mitigation_Guide.html" target="_blank" rel="noopener noreferrer">
           Mitigation Guide
         </a>
       </div>
