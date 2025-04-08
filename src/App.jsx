@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 
 export default function App() {
@@ -15,6 +15,8 @@ export default function App() {
   });
   const testFrameRef = useRef(null);
   const testCanvasRef = useRef(null);
+
+  const isValidURL = url.startsWith('https://');
 
   const checkURL = async () => {
     setError(null);
@@ -42,25 +44,30 @@ export default function App() {
         isVulnerable: isVulnerable,
         reason: protection === "None" ? "Missing clickjacking headers" : "Proper headers detected"
       });
+
+      if (testFrameRef.current) {
+        testFrameRef.current.src = url;
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Request failed');
     }
   };
+
   return (
-    <div className="flex h-screen z-50" style={{ 
+    <div className="flex flex-col lg:flex-row h-screen w-full overflow-hidden" style={{ 
       fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 
       backgroundColor: '#4d0c26', 
       color: '#f3cda2'
     }}>
       {/* NAVBAR - top right corner */}
-      <div className="absolute top-4 right-4 flex gap-4 text-sm">
+      <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
         <a
           href="/about.html"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:underline text-yellow-300"
         >
-          About Us
+          Company Template
         </a>
         <a
           href="/defensecj.html"
@@ -70,23 +77,19 @@ export default function App() {
         >
           Mitigation Guide
         </a>
-      </div></div>
-  )
-  && (
-    <div className="flex h-screen w-full overflow-hidden" style={{ 
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 
-      backgroundColor: '#4d0c26', 
-      color: '#f3cda2'
-    }}>
-      <div className="flex w-full h-full">
+      </div>
+
+      {/* Main Content */}
+      <div className="flex flex-col lg:flex-row w-full h-full">
         {/* Left Panel - Iframe Test Area */}
-        <div className="w-1/2 p-5 relative">
+        <div className="w-full lg:w-1/2 p-5 relative">
           <iframe 
             ref={testFrameRef}
             className="w-full h-full border-2 border-red-500 rounded-lg opacity-90"
             title="Test Frame"
           />
-          <div className="absolute top-5 left-5 w-[calc(100%-40px)] h-[calc(100%-40px)] bg-white bg-opacity-50 rounded-lg pointer-events-none"></div>
+          {/* Overlay ONLY on iframe */}
+          <div className="absolute inset-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10"></div>
           <canvas 
             ref={testCanvasRef}
             width="5"
@@ -96,7 +99,7 @@ export default function App() {
         </div>
 
         {/* Right Panel - Controls & Results */}
-        <div className="w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative">
+        <div className="w-full lg:w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative">
           <img 
             src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" 
             alt="Quasar CyberTech Logo" 
@@ -110,11 +113,14 @@ export default function App() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Enter website URL (with https://)"
-              className="flex-grow p-2 border border-gray-300 rounded-l-lg"
+              className="flex-grow p-2 border border-gray-300 rounded-l-lg text-black"
             />
             <button
               onClick={checkURL}
-              className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg"
+              disabled={!isValidURL}
+              className={`px-4 py-2 rounded-r-lg text-white ${
+                isValidURL ? 'bg-blue-500 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+              }`}
             >
               Test
             </button>
