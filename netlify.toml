@@ -4,3 +4,13 @@
 
 [functions]
   directory = "netlify/functions"
+
+[[redirects]]
+  from = "/about"
+  to = "/about.html"
+  status = 200
+
+[[redirects]]
+  from = "/defensecj"
+  to = "/defensecj.html"
+  status = 200

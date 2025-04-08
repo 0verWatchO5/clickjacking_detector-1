@@ -54,10 +54,10 @@ export default function App() {
       color: '#f3cda2'
     }}>
       <div className="absolute top-4 right-4 flex gap-4 text-sm">
-  <a href="https://clickjackingtest1.netlify.app/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">
+  <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">
     About Us
   </a>
-  <a href="https://clickjackingtest1.netlify.app/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">
+  <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">
     Mitigation Guide
   </a>
 </div>
