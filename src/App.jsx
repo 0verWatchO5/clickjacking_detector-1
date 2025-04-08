@@ -16,8 +16,6 @@ export default function App() {
   const testFrameRef = useRef(null);
   const testCanvasRef = useRef(null);
 
-  const isValidURL = url.startsWith('https://');
-
   const checkURL = async () => {
     setError(null);
     setResult(null);
@@ -40,9 +38,13 @@ export default function App() {
         isVisible: true,
         siteUrl: url,
         testTime: new Date().toUTCString(),
-        missingHeaders: isVulnerable ? 'X-Frame-Options, CSP frame-ancestors' : 'None - Site is protected',
+        missingHeaders: isVulnerable
+          ? 'X-Frame-Options, CSP frame-ancestors'
+          : 'None - Site is protected',
         isVulnerable: isVulnerable,
-        reason: protection === "None" ? "Missing clickjacking headers" : "Proper headers detected"
+        reason: protection === "None"
+          ? "Missing clickjacking headers"
+          : "Proper headers detected"
       });
 
       if (testFrameRef.current) {
@@ -54,11 +56,14 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen w-full overflow-hidden" style={{ 
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 
-      backgroundColor: '#4d0c26', 
-      color: '#f3cda2'
-    }}>
+    <div
+      className="flex h-screen w-full overflow-hidden"
+      style={{
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        backgroundColor: '#4d0c26',
+        color: '#f3cda2'
+      }}
+    >
       {/* NAVBAR - top right corner */}
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
         <a
@@ -67,7 +72,7 @@ export default function App() {
           rel="noopener noreferrer"
           className="hover:underline text-yellow-300"
         >
-          Company Template
+          About
         </a>
         <a
           href="/defensecj.html"
@@ -79,18 +84,20 @@ export default function App() {
         </a>
       </div>
 
-      {/* Main Content */}
-      <div className="flex flex-col lg:flex-row w-full h-full">
+      <div className="flex w-full h-full">
         {/* Left Panel - Iframe Test Area */}
-        <div className="w-full lg:w-1/2 p-5 relative">
-          <iframe 
-            ref={testFrameRef}
-            className="w-full h-full border-2 border-red-500 rounded-lg opacity-90"
-            title="Test Frame"
-          />
-          {/* Overlay ONLY on iframe */}
-          <div className="absolute inset-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10"></div>
-          <canvas 
+        <div className="w-1/2 p-5 relative">
+          <div className="w-full h-full relative">
+            <iframe
+              ref={testFrameRef}
+              className="w-full h-full border-2 border-red-500 rounded-lg opacity-90"
+              title="Test Frame"
+            />
+            {/* Overlay only on iframe area */}
+            <div className="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10" />
+          </div>
+
+          <canvas
             ref={testCanvasRef}
             width="5"
             height="5"
@@ -99,10 +106,10 @@ export default function App() {
         </div>
 
         {/* Right Panel - Controls & Results */}
-        <div className="w-full lg:w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative">
-          <img 
-            src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" 
-            alt="Quasar CyberTech Logo" 
+        <div className="w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative">
+          <img
+            src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
+            alt="Quasar CyberTech Logo"
             className="w-36 mb-3"
           />
           <h1 className="text-2xl font-bold mb-4">Clickjacking Test</h1>
@@ -117,10 +124,7 @@ export default function App() {
             />
             <button
               onClick={checkURL}
-              disabled={!isValidURL}
-              className={`px-4 py-2 rounded-r-lg text-white ${
-                isValidURL ? 'bg-blue-500 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
-              }`}
+              className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg"
             >
               Test
             </button>
@@ -128,17 +132,21 @@ export default function App() {
 
           {testResults.isVisible && (
             <div className="w-4/5 p-4 bg-red-50 rounded-lg mb-4 text-black">
-              <p><strong>Site:</strong> {testResults.siteUrl}</p>
-              <p><strong>Time:</strong> {testResults.testTime}</p>
               <p>
-                <strong>Missing Security Headers:</strong> 
+                <strong>Site:</strong> {testResults.siteUrl}
+              </p>
+              <p>
+                <strong>Time:</strong> {testResults.testTime}
+              </p>
+              <p>
+                <strong>Missing Security Headers:</strong>
                 <span className="text-red-600 font-bold"> {testResults.missingHeaders}</span>
               </p>
             </div>
           )}
 
           {testResults.isVulnerable !== null && (
-            <div 
+            <div
               className={`w-4/5 p-3 text-center font-bold text-white rounded ${
                 testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'
               }`}
@@ -150,7 +158,7 @@ export default function App() {
           {error && <p className="text-red-500 mt-4">{error}</p>}
 
           <p className="mt-6 text-xs text-center">
-            Payload developed by Quasar CyberTech Research Team ©<br/>
+            Payload developed by Quasar CyberTech Research Team ©<br />
             Made in India with <span className="text-red-600">❤️🇮🇳</span>
           </p>
         </div>
