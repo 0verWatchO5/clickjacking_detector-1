@@ -46,7 +46,6 @@ export default function App() {
       setError(err.response?.data?.error || 'Request failed');
     }
   };
-
   return (
     <div className="flex h-screen w-full overflow-hidden z-50" style={{ 
       fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 
@@ -54,14 +53,14 @@ export default function App() {
       color: '#f3cda2'
     }}>
       {/* NAVBAR - top right corner */}
-      <div className="absolute top-4 right-4 flex gap-4 text-sm z-75">
+      <div className="absolute top-4 right-4 flex gap-4 text-sm">
         <a
           href="/about.html"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:underline text-yellow-300"
         >
-          Company Template
+          About Us
         </a>
         <a
           href="/defensecj.html"
@@ -71,9 +70,14 @@ export default function App() {
         >
           Mitigation Guide
         </a>
-      </div>
-
-
+      </div></div>
+  )
+  && (
+    <div className="flex h-screen w-full overflow-hidden" style={{ 
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 
+      backgroundColor: '#4d0c26', 
+      color: '#f3cda2'
+    }}>
       <div className="flex w-full h-full">
         {/* Left Panel - Iframe Test Area */}
         <div className="w-1/2 p-5 relative">
