@@ -45,46 +45,72 @@ export default function App() {
       if (!hasXFO) missingHeaders.push('X-Frame-Options');
       if (!hasCSP) missingHeaders.push('CSP frame-ancestors');
 
-      // Load site into iframe
-      if (testFrameRef.current) {
-        const iframe = testFrameRef.current;
-        iframe.src = url;
+      let rendersContent = false;
+      // Attempt to load site into iframe with a timeout
+      const loadPromise = new Promise((resolve) => {
+        if (testFrameRef.current) {
+          const iframe = testFrameRef.current;
+          iframe.onload = () => {
+            try {
+              const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+              rendersContent =
+                iframeDoc &&
+                iframeDoc.body &&
+                iframeDoc.body.innerHTML &&
+                iframeDoc.body.innerHTML.trim().length > 0;
+            } catch (e) {
+              rendersContent = false; // Assume protection (cross-origin)
+            }
+            resolve();
+          };
+          iframe.onerror = () => {
+            rendersContent = false; // Error loading, assume protected
+            resolve();
+          };
+          iframe.src = url;
+        } else {
+          resolve();
+        }
+      });
 
+      // Set a timeout to handle cases where the site doesn't load or takes too long
+      const timeoutPromise = new Promise((resolve) => {
         setTimeout(() => {
-          let rendersContent = false;
+          resolve();
+        }, 3000); // Adjust timeout as needed
+      });
 
-          try {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            rendersContent =
-              iframeDoc &&
-              iframeDoc.body &&
-              iframeDoc.body.innerHTML &&
-              iframeDoc.body.innerHTML.trim().length > 0;
-          } catch (e) {
-            rendersContent = false; // Assume protection (cross-origin)
-          }
+      await Promise.race([loadPromise, timeoutPromise]);
 
-          const isVulnerable = missingHeaders.length > 0 && rendersContent;
+      const isVulnerable = missingHeaders.length > 0 && rendersContent;
 
-          setTestResults({
-            isVisible: true,
-            siteUrl: url,
-            testTime: new Date().toUTCString(),
-            missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
-            isVulnerable,
-            reason: isVulnerable
-              ? 'Page is embeddable and missing required security headers'
-              : !rendersContent
-              ? 'Page refused to render in iframe (likely protected)'
-              : 'Page rendered but has necessary headers',
-            rawHeaders: JSON.stringify(headers, null, 2)
-          });
+      setTestResults({
+        isVisible: true,
+        siteUrl: url,
+        testTime: new Date().toUTCString(),
+        missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
+        isVulnerable,
+        reason: isVulnerable
+          ? 'Page is embeddable and missing required security headers'
+          : missingHeaders.length > 0
+            ? 'Page rendered but has necessary headers'
+            : 'Page refused to render in iframe (likely protected by headers or other mechanisms)',
+        rawHeaders: JSON.stringify(headers, null, 2)
+      });
 
-          setResult(res.data);
-        }, 2000);
-      }
+      setResult(res.data);
+
     } catch (err) {
       setError(err.response?.data?.error || 'Request failed');
+      setTestResults({
+        isVisible: true,
+        siteUrl: url,
+        testTime: new Date().toUTCString(),
+        missingHeaders: 'Error fetching headers',
+        isVulnerable: null,
+        reason: 'Error fetching headers',
+        rawHeaders: ''
+      });
     }
   };
 
