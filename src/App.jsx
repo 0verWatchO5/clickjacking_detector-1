@@ -8,6 +8,7 @@ export default function App() {
   const [ip, setIP] = useState('-');
   const [shareURL, setShareURL] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showPoC, setShowPoC] = useState(false);
 
   const [testResults, setTestResults] = useState({
     isVisible: false,
@@ -52,7 +53,6 @@ export default function App() {
       if (!hasXFO) missingHeaders.push('X-Frame-Options');
       if (!hasCSP) missingHeaders.push('CSP frame-ancestors');
 
-      // Set iframe src and wait for it to load
       let iframeCanAccessWindow = false;
 
       const loadPromise = new Promise((resolve) => {
@@ -61,7 +61,6 @@ export default function App() {
 
         iframe.onload = () => {
           try {
-            // This line is based on the logic from your HTML file
             iframeCanAccessWindow = iframe.contentWindow && iframe.contentWindow.length !== undefined;
           } catch (e) {
             iframeCanAccessWindow = false;
@@ -135,7 +134,37 @@ export default function App() {
               className="w-full h-full border-2 border-red-500 rounded-lg opacity-90"
               title="Test Frame"
             />
-            <div className="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10" />
+
+            {/* Toggleable Fake Clickable Overlay for PoC */}
+            {showPoC && (
+              <div className="absolute top-[40%] left-[35%] z-20">
+                <button
+                  className="bg-blue-600 hover:bg-blue-800 text-white px-4 py-2 rounded shadow-lg relative"
+                  style={{ cursor: 'pointer' }}
+                >
+                  Click me!
+                  <span
+                    className="absolute -top-4 -left-6 text-black text-xs"
+                    style={{ fontStyle: 'italic' }}
+                  >
+                    (Simulated Clickjack)
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Toggle for POC Overlay */}
+          <div className="mt-3 flex items-center space-x-3">
+            <label className="text-red-400 text-sm font-semibold">
+              Toggle this to show/hide object on Iframe to Capture PoC
+            </label>
+            <input
+              type="checkbox"
+              checked={showPoC}
+              onChange={() => setShowPoC(!showPoC)}
+              className="w-4 h-4 text-red-600"
+            />
           </div>
         </div>
 
