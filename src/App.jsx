@@ -135,6 +135,15 @@ export default function App() {
               title="Test Frame"
             />
             <div className="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10" />
+
+            {showPoC && (
+              <div
+                className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded opacity-90 cursor-pointer"
+                onClick={() => alert('Fake button clicked (would click iframe content)')}
+              >
+                Click Me
+              </div>
+            )}
           </div>
         </div>
 
@@ -175,9 +184,7 @@ export default function App() {
 
           {testResults.isVulnerable !== null && (
             <div
-              className={`w-4/5 p-3 text-center font-bold text-white rounded ${
-                testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'
-              }`}
+              className={`w-4/5 p-3 text-center font-bold text-white rounded ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}
             >
               Site is {testResults.isVulnerable ? 'vulnerable' : 'not vulnerable'} to Clickjacking
             </div>
@@ -199,31 +206,20 @@ export default function App() {
                 value={shareURL}
                 className="text-black px-2 py-1 rounded border border-gray-300 flex-grow"
               />
-              <button onClick={handleCopy} className="text-blue-300 hover:underline">
-                {copied ? 'Copied!' : 'COPY'}
-              </button>
+              <button onClick={handleCopy} className="text-blue-300 hover:underline">{copied ? 'Copied!' : 'COPY'}</button>
             </div>
           )}
 
-          {/* Toggle Switch */}
-          <div className="w-4/5 mt-4 flex items-center justify-start text-sm gap-3">
-            <label htmlFor="pocToggle" className="flex items-center cursor-pointer">
-              <div className="relative">
-                <input
-                  id="pocToggle"
-                  type="checkbox"
-                  className="sr-only"
-                  checked={showPoC}
-                  onChange={() => setShowPoC(!showPoC)}
-                />
-                <div className="block bg-gray-600 w-10 h-6 rounded-full"></div>
-                <div
-                  className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition ${
-                    showPoC ? 'translate-x-full' : ''
-                  }`}
-                ></div>
-              </div>
-              <span className="ml-3">Show PoC Click</span>
+          <div className="w-4/5 mt-4 flex items-center justify-start gap-3 text-xs">
+            <label htmlFor="poc-toggle" className="flex items-center gap-2 cursor-pointer">
+              <input
+                id="poc-toggle"
+                type="checkbox"
+                checked={showPoC}
+                onChange={() => setShowPoC(!showPoC)}
+                className="toggle-switch"
+              />
+              <span>Show PoC Click</span>
             </label>
           </div>
 
