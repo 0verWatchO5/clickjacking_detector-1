@@ -54,10 +54,10 @@ export default function App() {
       color: '#f3cda2'
     }}>
       <div className="absolute top-4 right-4 flex gap-4 text-sm">
-        <a href="/Quasar_Company_Template.html" target="_blank" rel="noopener noreferrer">
+        <a href="/quasar_company_template.html" target="_blank" rel="noopener noreferrer">
           Company Template
         </a>
-        <a href="/clickjacking_mitigation_Guide.html" target="_blank" rel="noopener noreferrer">
+        <a href="/clickjacking_guide.html" target="_blank" rel="noopener noreferrer">
           Mitigation Guide
         </a>
       </div>
