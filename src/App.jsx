@@ -5,6 +5,10 @@ export default function App() {
   const [url, setUrl] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [ip, setIP] = useState('-');
+  const [shareURL, setShareURL] = useState('');
+  const [copied, setCopied] = useState(false);
+
   const [testResults, setTestResults] = useState({
     isVisible: false,
     siteUrl: '-',
@@ -16,11 +20,11 @@ export default function App() {
   });
 
   const testFrameRef = useRef(null);
-  const testCanvasRef = useRef(null);
 
   const checkURL = async () => {
     setError(null);
     setResult(null);
+    setCopied(false);
     setTestResults({
       isVisible: false,
       siteUrl: '-',
@@ -34,62 +38,79 @@ export default function App() {
     try {
       const res = await axios.post('/.netlify/functions/checkHeaders', { url });
       const headers = res.data.headers || {};
+      const ipAddr = res.data.ip || '-';
+      setIP(ipAddr);
+      setShareURL(`${window.location.origin}/result?url=${encodeURIComponent(url)}`);
 
       const xfo = headers['x-frame-options'];
       const csp = headers['content-security-policy'];
+
       const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
-      const hasCSPFrameAncestors = csp && /frame-ancestors/i.test(csp);
+      const hasCSP = csp && /frame-ancestors/i.test(csp);
 
       const missingHeaders = [];
-      if (!xfo) missingHeaders.push('X-Frame-Options');
-      if (!csp || !hasCSPFrameAncestors) missingHeaders.push('CSP frame-ancestors');
+      if (!hasXFO) missingHeaders.push('X-Frame-Options');
+      if (!hasCSP) missingHeaders.push('CSP frame-ancestors');
 
-      if (testFrameRef.current) {
+      // Set iframe src and wait for it to load
+      let iframeCanAccessWindow = false;
+
+      const loadPromise = new Promise((resolve) => {
         const iframe = testFrameRef.current;
-        iframe.src = url;
+        if (!iframe) return resolve();
 
-        setTimeout(() => {
-          let rendersContent = false;
-
+        iframe.onload = () => {
           try {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            rendersContent =
-              iframeDoc &&
-              iframeDoc.body &&
-              iframeDoc.body.innerHTML &&
-              iframeDoc.body.innerHTML.trim().length > 0;
+            // This line is based on the logic from your HTML file
+            iframeCanAccessWindow = iframe.contentWindow && iframe.contentWindow.length !== undefined;
           } catch (e) {
-            rendersContent = false;
+            iframeCanAccessWindow = false;
           }
+          resolve();
+        };
 
-          const isBlocked = !rendersContent;
-          const isVulnerable = missingHeaders.length > 0 && rendersContent;
+        iframe.onerror = () => resolve();
+        iframe.src = url;
+      });
 
-          let reason = '';
-          if (isVulnerable) {
-            reason = 'Page is embeddable and missing required security headers';
-          } else if (isBlocked) {
-            reason = 'Page refused to render in iframe (likely protected)';
-          } else {
-            reason = 'Page rendered but has necessary headers';
-          }
+      const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000));
+      await Promise.race([loadPromise, timeoutPromise]);
 
-          setTestResults({
-            isVisible: true,
-            siteUrl: url,
-            testTime: new Date().toUTCString(),
-            missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
-            isVulnerable,
-            reason,
-            rawHeaders: JSON.stringify(headers, null, 2)
-          });
+      const vulnerable = missingHeaders.length > 0 && iframeCanAccessWindow;
 
-          setResult(res.data);
-        }, 2000);
-      }
+      setTestResults({
+        isVisible: true,
+        siteUrl: url,
+        testTime: new Date().toUTCString(),
+        missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
+        isVulnerable: vulnerable,
+        reason: vulnerable
+          ? 'Page is embeddable and missing required security headers'
+          : missingHeaders.length > 0
+            ? 'Page rendered but has necessary headers'
+            : 'Page refused to render in iframe (likely protected by headers or other mechanisms)',
+        rawHeaders: JSON.stringify(headers, null, 2)
+      });
+
+      setResult(res.data);
     } catch (err) {
       setError(err.response?.data?.error || 'Request failed');
+      setTestResults({
+        isVisible: true,
+        siteUrl: url,
+        testTime: new Date().toUTCString(),
+        missingHeaders: 'Error fetching headers',
+        isVulnerable: null,
+        reason: 'Error fetching headers',
+        rawHeaders: ''
+      });
     }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareURL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -102,22 +123,8 @@ export default function App() {
       }}
     >
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
-        <a
-          href="/about.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:underline text-yellow-300"
-        >
-          About
-        </a>
-        <a
-          href="/defensecj.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:underline text-yellow-300"
-        >
-          Mitigation Guide
-        </a>
+        <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">About</a>
+        <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">Mitigation Guide</a>
       </div>
 
       <div className="flex w-full h-full">
@@ -130,13 +137,6 @@ export default function App() {
             />
             <div className="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10" />
           </div>
-
-          <canvas
-            ref={testCanvasRef}
-            width="5"
-            height="5"
-            className="absolute top-0 left-0 opacity-0 pointer-events-none"
-          />
         </div>
 
         <div className="w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative z-0">
@@ -166,9 +166,9 @@ export default function App() {
           {testResults.isVisible && (
             <div className="w-4/5 p-4 bg-red-50 rounded-lg mb-4 text-black">
               <p><strong>Site:</strong> {testResults.siteUrl}</p>
+              <p><strong>IP Address:</strong> {ip}</p>
               <p><strong>Time:</strong> {testResults.testTime}</p>
-              <p>
-                <strong>Missing Security Headers:</strong>
+              <p><strong>Missing Security Headers:</strong>
                 <span className="text-red-600 font-bold"> {testResults.missingHeaders}</span>
               </p>
             </div>
@@ -186,8 +186,21 @@ export default function App() {
 
           {testResults.rawHeaders && (
             <div className="w-4/5 bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-60 mt-4 font-mono">
-              <strong>Raw Response Headers:</strong>
+              <strong className="text-lime-400">Raw Response Headers:</strong>
               <pre>{testResults.rawHeaders}</pre>
+            </div>
+          )}
+
+          {shareURL && (
+            <div className="w-4/5 mt-4 flex items-center justify-center text-xs gap-2">
+              <span>Share result via:</span>
+              <input
+                type="text"
+                readOnly
+                value={shareURL}
+                className="text-black px-2 py-1 rounded border border-gray-300 flex-grow"
+              />
+              <button onClick={handleCopy} className="text-blue-300 hover:underline">{copied ? 'Copied!' : 'COPY'}</button>
             </div>
           )}
 
