@@ -54,7 +54,7 @@ export default function App() {
       color: '#f3cda2'
     }}>
       {/* NAVBAR - top right corner */}
-      <div className="absolute top-4 right-4 flex gap-4 text-sm">
+      <div className="absolute top-4 right-4 flex gap-4 text-sm z-75">
         <a
           href="/about.html"
           target="_blank"
