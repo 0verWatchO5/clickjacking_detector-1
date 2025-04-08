@@ -1,137 +1,204 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 
-const App = () => {
+export default function App() {
   const [url, setUrl] = useState('');
   const [result, setResult] = useState(null);
-  const [rawHeaders, setRawHeaders] = useState(null);
-  const iframeRef = useRef(null);
+  const [error, setError] = useState(null);
+  const [testResults, setTestResults] = useState({
+    isVisible: false,
+    siteUrl: '-',
+    testTime: '-',
+    missingHeaders: '-',
+    isVulnerable: null,
+    reason: '',
+    rawHeaders: ''
+  });
 
-  const handleTest = async () => {
+  const testFrameRef = useRef(null);
+  const testCanvasRef = useRef(null);
+
+  const checkURL = async () => {
+    setError(null);
     setResult(null);
-    setRawHeaders(null);
+    setTestResults({
+      isVisible: false,
+      siteUrl: '-',
+      testTime: '-',
+      missingHeaders: '-',
+      isVulnerable: null,
+      reason: '',
+      rawHeaders: ''
+    });
 
     try {
-      const response = await axios.post('/.netlify/functions/check-headers', { url });
-      const { headers, time } = response.data;
-      setRawHeaders(headers);
+      const res = await axios.post('/.netlify/functions/checkHeaders', { url });
+      const headers = res.data.headers || {};
 
-      const missing = [];
-      if (!headers['x-frame-options']) missing.push('X-Frame-Options');
-      if (!headers['content-security-policy'] || !headers['content-security-policy'].includes('frame-ancestors')) {
-        missing.push('CSP frame-ancestors');
-      }
+      const xfo = headers['x-frame-options'];
+      const csp = headers['content-security-policy'];
 
-      const checkIframe = () => {
-        try {
-          const iframe = iframeRef.current;
-          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
+      const hasCSP = csp && /frame-ancestors/i.test(csp);
 
-          const bodyText = iframeDoc?.body?.innerText?.trim() || '';
-          const bodyImages = iframeDoc?.images?.length || 0;
+      const missingHeaders = [];
+      if (!hasXFO) missingHeaders.push('X-Frame-Options');
+      if (!hasCSP) missingHeaders.push('CSP frame-ancestors');
 
-          const rendersContent =
-            bodyText.length > 50 || bodyImages > 0 || iframeDoc.body.querySelectorAll('div, section, article').length > 0;
+      // Load site into iframe
+      if (testFrameRef.current) {
+        const iframe = testFrameRef.current;
+        iframe.src = url;
 
-          const isVulnerable = rendersContent && missing.length > 0;
+        setTimeout(() => {
+          let rendersContent = false;
 
-          setResult({
-            site: url,
-            time,
-            missingHeaders: missing,
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            rendersContent =
+              iframeDoc &&
+              iframeDoc.body &&
+              iframeDoc.body.innerHTML &&
+              iframeDoc.body.innerHTML.trim().length > 0;
+          } catch (e) {
+            // Cross-origin protection - assume iframe could not render
+            rendersContent = false;
+          }
+
+          const isVulnerable = rendersContent && missingHeaders.length > 0;
+
+          setTestResults({
+            isVisible: true,
+            siteUrl: url,
+            testTime: new Date().toUTCString(),
+            missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
             isVulnerable,
+            reason: isVulnerable
+              ? 'Page is embeddable and missing required security headers'
+              : rendersContent
+              ? 'Page rendered but has necessary headers'
+              : 'Page refused to render in iframe (likely protected)',
+            rawHeaders: JSON.stringify(headers, null, 2)
           });
-        } catch (err) {
-          setResult({
-            site: url,
-            time,
-            missingHeaders: missing,
-            isVulnerable: false,
-          });
-        }
-      };
 
-      setTimeout(checkIframe, 1500); // Allow iframe to load
-    } catch (error) {
-      console.error('Error fetching headers:', error);
-      setResult({ error: 'Failed to fetch headers. Please try again.' });
+          setResult(res.data);
+        }, 2000);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Request failed');
     }
   };
 
   return (
-    <div className="min-h-screen flex font-sans text-[#f3cda2] bg-[#4d0c26]">
-      <div className="w-1/2 p-4">
-        <iframe
-          ref={iframeRef}
-          src={url}
-          title="iframe-test"
-          className="w-full h-full rounded-lg bg-gray-100"
-        ></iframe>
+    <div
+      className="flex h-screen w-full overflow-hidden"
+      style={{
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        backgroundColor: '#4d0c26',
+        color: '#f3cda2'
+      }}
+    >
+      {/* NAVBAR - top right corner */}
+      <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
+        <a
+          href="/about.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline text-yellow-300"
+        >
+          About
+        </a>
+        <a
+          href="/defensecj.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline text-yellow-300"
+        >
+          Mitigation Guide
+        </a>
       </div>
-      <div className="w-1/2 p-8">
-        <div className="flex justify-between items-center">
-          <img src="/logo.png" alt="Logo" className="h-16" />
-          <div className="space-x-4 text-yellow-400 font-semibold">
-            <a href="/quasar_company_template.html">About</a>
-            <a href="/clickjacking_guide.html">Mitigation Guide</a>
+
+      <div className="flex w-full h-full">
+        {/* Left Panel - Iframe Test Area */}
+        <div className="w-1/2 p-5 relative">
+          <div className="w-full h-full relative">
+            <iframe
+              ref={testFrameRef}
+              className="w-full h-full border-2 border-red-500 rounded-lg opacity-90"
+              title="Test Frame"
+            />
+            <div className="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10" />
           </div>
-        </div>
-        <h1 className="text-3xl font-bold my-6">Clickjacking Test</h1>
-        <div className="flex mb-4">
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://example.com"
-            className="flex-grow p-2 rounded-l-md text-black"
+
+          <canvas
+            ref={testCanvasRef}
+            width="5"
+            height="5"
+            className="absolute top-0 left-0 opacity-0 pointer-events-none"
           />
-          <button
-            onClick={handleTest}
-            className="bg-blue-600 px-4 text-white font-semibold rounded-r-md"
-          >
-            Test
-          </button>
         </div>
 
-        {result && !result.error && (
-          <div className="bg-white text-black p-4 rounded mb-4">
-            <p><strong>Site:</strong> {result.site}</p>
-            <p><strong>Time:</strong> {result.time}</p>
-            {result.missingHeaders.length > 0 ? (
-              <p><strong>Missing Security Headers:</strong> <span className="text-red-600">{result.missingHeaders.join(', ')}</span></p>
-            ) : (
-              <p className="text-green-600 font-semibold">No missing security headers.</p>
-            )}
+        {/* Right Panel - Controls & Results */}
+        <div className="w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative z-0">
+          <img
+            src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
+            alt="Quasar CyberTech Logo"
+            className="w-36 mb-3"
+          />
+          <h1 className="text-2xl font-bold mb-4">Clickjacking Test</h1>
+
+          <div className="flex w-4/5 mb-4">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Enter website URL (with https://)"
+              className="flex-grow p-2 border border-gray-300 rounded-l-lg text-black"
+            />
+            <button
+              onClick={checkURL}
+              className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg"
+            >
+              Test
+            </button>
           </div>
-        )}
 
-        {result?.error && (
-          <div className="bg-red-200 text-red-800 p-4 rounded">
-            {result.error}
-          </div>
-        )}
+          {testResults.isVisible && (
+            <div className="w-4/5 p-4 bg-red-50 rounded-lg mb-4 text-black">
+              <p><strong>Site:</strong> {testResults.siteUrl}</p>
+              <p><strong>Time:</strong> {testResults.testTime}</p>
+              <p>
+                <strong>Missing Security Headers:</strong>
+                <span className="text-red-600 font-bold"> {testResults.missingHeaders}</span>
+              </p>
+            </div>
+          )}
 
-        {result && !result.error && (
-          <div className={`p-4 rounded text-center text-white font-bold ${result.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}>
-            {result.isVulnerable
-              ? 'Site is vulnerable to Clickjacking'
-              : 'Site is not vulnerable to Clickjacking'}
-          </div>
-        )}
+          {testResults.isVulnerable !== null && (
+            <div
+              className={`w-4/5 p-3 text-center font-bold text-white rounded ${
+                testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'
+              }`}
+            >
+              Site is {testResults.isVulnerable ? 'vulnerable' : 'not vulnerable'} to Clickjacking
+            </div>
+          )}
 
-        {rawHeaders && (
-          <pre className="bg-black text-green-400 mt-4 p-4 rounded overflow-auto text-sm max-h-64">
-            {JSON.stringify(rawHeaders, null, 2)}
-          </pre>
-        )}
+          {testResults.rawHeaders && (
+            <div className="w-4/5 bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-60 mt-4 font-mono">
+              <strong>Raw Response Headers:</strong>
+              <pre>{testResults.rawHeaders}</pre>
+            </div>
+          )}
 
-        <div className="mt-6 text-sm text-center opacity-80">
-          Payload developed by Quasar CyberTech Research Team ©<br />
-          Made in India with ❤️🇮🇳
+          {error && <p className="text-red-500 mt-4">{error}</p>}
+
+          <p className="mt-6 text-xs text-center">
+            Payload developed by Quasar CyberTech Research Team ©<br />
+            Made in India with <span className="text-red-600">❤️🇮🇳</span>
+          </p>
         </div>
       </div>
     </div>
   );
-};
-
-export default App;
+}
