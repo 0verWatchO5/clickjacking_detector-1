@@ -13,6 +13,7 @@ export default function App() {
     isVulnerable: null,
     reason: ''
   });
+
   const testFrameRef = useRef(null);
   const testCanvasRef = useRef(null);
 
@@ -35,10 +36,14 @@ export default function App() {
       const xfo = headers['x-frame-options'];
       const csp = headers['content-security-policy'];
 
-      const hasXFO = xfo && xfo.toLowerCase().includes('deny' || 'sameorigin');
-      const hasCSP = csp && csp.toLowerCase().includes('frame-ancestors');
+      const hasXFO = xfo && /(deny|sameorigin)/i.test(xfo);
+      const hasCSP = csp && /frame-ancestors/i.test(csp);
 
-      const isVulnerable = !(hasXFO || hasCSP);
+      const missing = [];
+      if (!hasXFO) missing.push('X-Frame-Options');
+      if (!hasCSP) missing.push('CSP frame-ancestors');
+
+      const isVulnerable = missing.length > 0;
 
       setResult(res.data);
 
@@ -46,12 +51,10 @@ export default function App() {
         isVisible: true,
         siteUrl: url,
         testTime: new Date().toUTCString(),
-        missingHeaders: isVulnerable
-          ? 'X-Frame-Options, CSP frame-ancestors'
-          : 'None - Site is protected',
+        missingHeaders: missing.length > 0 ? missing.join(', ') : 'None - Site is protected',
         isVulnerable,
         reason: isVulnerable
-          ? 'Missing X-Frame-Options or frame-ancestors directive in CSP'
+          ? `Missing ${missing.join(' and ')}`
           : 'Proper protection headers are in place'
       });
 
