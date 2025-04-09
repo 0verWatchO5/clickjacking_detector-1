@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import watermark from '/Quasar.png'; // placed in public folder
+import watermark from '/quasarmain.png'; // placed in public folder
 import './App.css';
 
 export default function App() {
