@@ -232,10 +232,6 @@ export default function App() {
           </p>
         </div>
       </div>
-
-      <footer className="bg-[#4d0c26] text-[#f3cda2] text-center text-xs py-4 border-t border-pink-900 mt-8">
-        <p className="font-semibold">This is a property of Quasar CyberTech</p>
-      </footer>
     </div>
   );
 }
