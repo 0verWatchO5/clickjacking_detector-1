@@ -9,6 +9,8 @@ export default function App() {
   const [shareURL, setShareURL] = useState('');
   const [copied, setCopied] = useState(false);
   const [showPoC, setShowPoC] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [autoReload, setAutoReload] = useState(true);
 
   const [testResults, setTestResults] = useState({
     isVisible: false,
@@ -26,6 +28,7 @@ export default function App() {
     setError(null);
     setResult(null);
     setCopied(false);
+    setLoading(true);
     setTestResults({
       isVisible: false,
       siteUrl: '-',
@@ -37,6 +40,8 @@ export default function App() {
     });
 
     try {
+      const testUrlWithTimestamp = `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
+
       const res = await axios.post('/.netlify/functions/checkHeaders', { url });
       const headers = res.data.headers || {};
       const ipAddr = res.data.ip || '-';
@@ -69,7 +74,7 @@ export default function App() {
         };
 
         iframe.onerror = () => resolve();
-        iframe.src = url;
+        iframe.src = testUrlWithTimestamp;
       });
 
       const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000));
@@ -92,6 +97,12 @@ export default function App() {
       });
 
       setResult(res.data);
+
+      if (autoReload) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Request failed');
       setTestResults({
@@ -103,6 +114,8 @@ export default function App() {
         reason: 'Error fetching headers',
         rawHeaders: ''
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -171,6 +184,13 @@ export default function App() {
             </button>
           </div>
 
+          {loading && (
+            <div className="w-4/5 mb-4 text-center">
+              <div className="loader mx-auto my-4"></div>
+              <p className="text-sm italic">Running test... please wait</p>
+            </div>
+          )}
+
           {testResults.isVisible && (
             <div className="w-4/5 p-4 bg-red-50 rounded-lg mb-4 text-black">
               <p><strong>Site:</strong> {testResults.siteUrl}</p>
@@ -223,6 +243,19 @@ export default function App() {
             </label>
           </div>
 
+          <div className="w-4/5 mt-2 flex items-center justify-start gap-3 text-xs">
+            <label htmlFor="reload-toggle" className="flex items-center gap-2 cursor-pointer">
+              <input
+                id="reload-toggle"
+                type="checkbox"
+                checked={autoReload}
+                onChange={() => setAutoReload(!autoReload)}
+                className="toggle-switch"
+              />
+              <span>Reload page after test</span>
+            </label>
+          </div>
+
           {error && <p className="text-red-500 mt-4">{error}</p>}
 
           <p className="mt-6 text-xs text-center">
@@ -231,6 +264,22 @@ export default function App() {
           </p>
         </div>
       </div>
+
+      {/* Spinner Style */}
+      <style>{`
+        .loader {
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #3498db;
+          border-radius: 50%;
+          width: 32px;
+          height: 32px;
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
