@@ -2,7 +2,8 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import watermark from '/Quasar.png'; // placed in public folder
+import watermark from 'https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png'; // placed in public folder
+import './App.css';
 
 export default function App() {
   const [url, setUrl] = useState('');
@@ -234,7 +235,6 @@ export default function App() {
 
       <footer className="bg-[#4d0c26] text-[#f3cda2] text-center text-xs py-4 border-t border-pink-900 mt-8">
         <p className="font-semibold">This is a property of Quasar CyberTech</p>
-        <p className="mt-1">#1, State Bank Colony, Indira Nagar, Nashik, Maharashtra – 422009</p>
       </footer>
     </div>
   );

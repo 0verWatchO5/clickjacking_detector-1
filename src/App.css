@@ -1,0 +1,29 @@
+/* For modern browsers (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+  
+::-webkit-scrollbar-track {
+  background: #4d0c26; /* matches background */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #f3cda2; /* matches text color */
+  border-radius: 6px;
+  border: 2px solid #4d0c26; /* creates spacing */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #ffe0a3; /* a lighter variant for hover */
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #f3cda2 #4d0c26;
+}
+::-webkit-scrollbar-thumb {
+  transition: background-color 0.2s ease-in-out;
+}
+    
