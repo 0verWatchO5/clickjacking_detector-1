@@ -1,4 +1,3 @@
-// Updated App.jsx with improved layout and PDF styling (logic untouched)
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
@@ -160,20 +159,26 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen" style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#4d0c26', color: '#f3cda2' }}>
+      {/* Top links */}
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
         <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">About</a>
         <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">Mitigation Guide</a>
       </div>
 
+      {/* Main grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 flex-grow gap-2 p-4">
+        {/* Left: Iframe display */}
         <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl">
           <iframe ref={testFrameRef} className="w-full h-full min-h-[400px] opacity-90" title="Test Frame" />
           <div className="absolute inset-0 bg-white bg-opacity-50 pointer-events-none z-10 rounded-xl" />
           {showPoC && (
-            <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>Click Me</div>
+            <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>
+              Click Me
+            </div>
           )}
         </div>
 
+        {/* Right: Control panel */}
         <div className="bg-[#320818] p-6 rounded-xl shadow-xl flex flex-col items-center space-y-4">
           <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Logo" className="w-36" />
           <h1 className="text-2xl font-bold">Clickjacking Test</h1>
