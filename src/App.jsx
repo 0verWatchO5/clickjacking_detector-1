@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
+import watermark from '/Quasar.png'; // placed in public folder
 
 export default function App() {
   const [url, setUrl] = useState('');
@@ -25,10 +26,6 @@ export default function App() {
   const testFrameRef = useRef(null);
 
   const checkURL = async () => {
-    window.location.reload();
-  };
-
-  const runTest = async () => {
     setError(null);
     setResult(null);
     setCopied(false);
@@ -52,6 +49,7 @@ export default function App() {
 
       const xfo = headers['x-frame-options'];
       const csp = headers['content-security-policy'];
+
       const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
       const hasCSP = csp && /frame-ancestors/i.test(csp);
 
@@ -64,6 +62,7 @@ export default function App() {
       const loadPromise = new Promise((resolve) => {
         const iframe = testFrameRef.current;
         if (!iframe) return resolve();
+
         iframe.onload = () => {
           try {
             iframeCanAccessWindow = iframe.contentWindow && iframe.contentWindow.length !== undefined;
@@ -72,6 +71,7 @@ export default function App() {
           }
           resolve();
         };
+
         iframe.onerror = () => resolve();
         iframe.src = url;
       });
@@ -118,37 +118,35 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const exportPDF = () => {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'px',
-      format: 'a4',
-      putOnlyUsedFonts: true,
-    });
+  const exportPDF = async () => {
+    const doc = new jsPDF();
+    const img = new Image();
+    img.src = watermark;
 
     doc.setFillColor('#4d0c26');
-    doc.rect(0, 0, 600, 842, 'F');
-
+    doc.rect(0, 0, 210, 297, 'F');
     doc.setTextColor('#f3cda2');
-    doc.setFontSize(18);
-    doc.text('Clickjacking Test Result', 40, 60);
+    doc.setFont('helvetica', 'bold');
+
+    doc.setFontSize(20);
+    doc.text('Clickjacking Test Report', 15, 20);
 
     doc.setFontSize(12);
-    doc.text(`Site: ${testResults.siteUrl}`, 40, 100);
-    doc.text(`IP Address: ${ip}`, 40, 130);
-    doc.text(`Time: ${testResults.testTime}`, 40, 160);
-    doc.text(`Missing Headers: ${testResults.missingHeaders}`, 40, 190);
-    doc.text(`Vulnerability: ${testResults.isVulnerable ? 'Vulnerable' : 'Not Vulnerable'}`, 40, 220);
-    doc.text(`Reason: ${testResults.reason}`, 40, 250);
+    doc.text(`Site: ${testResults.siteUrl}`, 15, 35);
+    doc.text(`IP Address: ${ip}`, 15, 45);
+    doc.text(`Time: ${testResults.testTime}`, 15, 55);
+    doc.text(`Missing Security Headers: ${testResults.missingHeaders}`, 15, 65);
+    doc.text(`Vulnerability: ${testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'}`, 15, 75);
+    doc.text(`Reason: ${testResults.reason}`, 15, 85);
 
+    doc.setFont('courier', 'normal');
     doc.setFontSize(10);
-    doc.text('Raw Headers:', 40, 290);
-    doc.setFont('Courier', 'normal');
-    doc.text(doc.splitTextToSize(testResults.rawHeaders, 500), 40, 310);
+    const lines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
+    doc.text('Raw Headers:', 15, 100);
+    doc.text(lines, 15, 110);
 
-    doc.addImage('/Quasar.png', 'PNG', 400, 700, 120, 120); // Watermark
-
-    doc.save('Clickjacking_Report.pdf');
+    doc.addImage(img, 'PNG', 140, 250, 50, 40);
+    doc.save('clickjacking_report.pdf');
   };
 
   return (
@@ -167,20 +165,22 @@ export default function App() {
 
       <div className="flex w-full h-full">
         <div className="w-1/2 p-5 relative">
-          <iframe
-            ref={testFrameRef}
-            className="w-full h-full border-2 border-red-500 rounded-lg opacity-90"
-            title="Test Frame"
-          />
-          <div className="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10" />
-          {showPoC && (
-            <div
-              className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded opacity-90 cursor-pointer"
-              onClick={() => alert('Fake button clicked (would click iframe content)')}
-            >
-              Click Me
-            </div>
-          )}
+          <div className="w-full h-full relative">
+            <iframe
+              ref={testFrameRef}
+              className="w-full h-full border-2 border-red-500 rounded-lg opacity-90"
+              title="Test Frame"
+            />
+            <div className="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10" />
+            {showPoC && (
+              <div
+                className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded opacity-90 cursor-pointer"
+                onClick={() => alert('Fake button clicked (would click iframe content)')}
+              >
+                Click Me
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative z-0">
@@ -207,7 +207,7 @@ export default function App() {
             </button>
           </div>
 
-          {loading && <div className="mb-4 animate-pulse text-yellow-300">Testing in progress...</div>}
+          {loading && <div className="text-yellow-300 text-sm mb-4 animate-pulse">Running test...</div>}
 
           {testResults.isVisible && (
             <div className="w-4/5 p-4 bg-red-50 rounded-lg mb-4 text-black">
@@ -248,7 +248,7 @@ export default function App() {
             </div>
           )}
 
-          <div className="w-4/5 mt-4 flex items-center justify-start gap-3 text-xs">
+          <div className="w-4/5 mt-4 flex items-center justify-between gap-3 text-xs">
             <label htmlFor="poc-toggle" className="flex items-center gap-2 cursor-pointer">
               <input
                 id="poc-toggle"
@@ -258,14 +258,16 @@ export default function App() {
               />
               <span>Click to show object on iframe to capture PoC</span>
             </label>
-          </div>
 
-          <button
-            onClick={exportPDF}
-            className="mt-4 bg-yellow-400 hover:bg-yellow-600 text-black font-semibold px-4 py-2 rounded"
-          >
-            Export PDF
-          </button>
+            {testResults.isVisible && (
+              <button
+                className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded"
+                onClick={exportPDF}
+              >
+                Export PDF
+              </button>
+            )}
+          </div>
 
           {error && <p className="text-red-500 mt-4">{error}</p>}
 
