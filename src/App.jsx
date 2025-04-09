@@ -219,7 +219,7 @@ export default function App() {
                 onChange={() => setShowPoC(!showPoC)}
                 className="toggle-switch"
               />
-              <span>Click to capture PoC</span>
+              <span>Click to show object on iframe to capture PoC</span>
             </label>
           </div>
 
