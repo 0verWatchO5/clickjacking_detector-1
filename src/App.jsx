@@ -128,8 +128,8 @@ export default function App() {
     doc.text(`IP Address: ${ip}`, 15, 45);
     doc.text(`Test Time: ${testResults.testTime}`, 15, 55);
     doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
-    doc.text(`Vulnerability Status: ${testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'}`, 15, 75);
-    doc.text(`Reason:`, 15, 85);
+    doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
+    doc.text('Reason:', 15, 85);
 
     doc.setFont('courier', 'normal');
     const reasonLines = doc.splitTextToSize(testResults.reason, 180);
@@ -150,35 +150,48 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#4d0c26', color: '#f3cda2' }}>
+    <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative">
+      {/* Header Links */}
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
         <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">About</a>
         <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">Mitigation Guide</a>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 flex-grow gap-2 p-4">
-        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl">
+      {/* Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 h-full p-4 gap-4">
+        {/* Iframe Panel */}
+        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl bg-white">
           <iframe ref={testFrameRef} className="w-full h-full min-h-[400px] opacity-90" title="Test Frame" />
-          <div className="absolute inset-0 bg-white bg-opacity-50 pointer-events-none z-10 rounded-xl" />
           {showPoC && (
-            <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>Click Me</div>
+            <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>
+              Click Me
+            </div>
           )}
         </div>
 
-        <div className="bg-[#320818] p-6 rounded-xl shadow-xl flex flex-col items-center space-y-4">
-          <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Logo" className="w-36" />
-          <h1 className="text-2xl font-bold text-center">Clickjacking Test</h1>
+        {/* Result Panel */}
+        <div className="bg-[#320818] p-6 rounded-xl shadow-xl flex flex-col items-center overflow-auto">
+          <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Logo" className="w-36 mb-2" />
+          <h1 className="text-2xl font-bold text-center mb-4">Clickjacking Test</h1>
 
-          <div className="flex w-full max-w-xl">
-            <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Enter website URL (with https://)" className="flex-grow p-2 border border-gray-300 rounded-l text-black" />
-            <button onClick={checkURL} className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-r">Test</button>
+          <div className="flex w-full max-w-xl mb-4">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Enter website URL (with https://)"
+              className="flex-grow p-2 border border-gray-300 rounded-l text-black"
+            />
+            <button onClick={checkURL} className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-r">
+              Test
+            </button>
           </div>
 
-          {loading && <div className="text-yellow-300 animate-pulse">Running test...</div>}
+          {loading && <div className="text-yellow-300 animate-pulse mb-2">Running test...</div>}
 
           {testResults.isVisible && (
             <>
-              <div className="w-full max-w-xl bg-red-100 text-black p-4 rounded-lg">
+              <div className="w-full max-w-xl bg-red-100 text-black p-4 rounded-lg text-sm mb-2">
                 <p><strong>Site:</strong> {testResults.siteUrl}</p>
                 <p><strong>IP Address:</strong> {ip}</p>
                 <p><strong>Time:</strong> {testResults.testTime}</p>
@@ -186,13 +199,13 @@ export default function App() {
               </div>
 
               {testResults.isVulnerable !== null && (
-                <div className={`w-full max-w-xl p-3 text-center font-bold text-white rounded ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}>
+                <div className={`w-full max-w-xl p-3 text-center font-bold text-white rounded ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'} mb-2`}>
                   Site is {testResults.isVulnerable ? 'vulnerable' : 'not vulnerable'} to Clickjacking
                 </div>
               )}
 
               {testResults.rawHeaders && (
-                <div className="w-full max-w-xl bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-60 font-mono">
+                <div className="w-full max-w-xl bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-60 font-mono mb-2">
                   <strong className="text-lime-400">Raw Headers:</strong>
                   <pre>{testResults.rawHeaders}</pre>
                 </div>
@@ -208,10 +221,11 @@ export default function App() {
             </>
           )}
 
-          {error && <p className="text-red-500 text-xs">{error}</p>}
+          {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
 
           <p className="text-xs mt-4 text-center">
-            Payload developed by Quasar CyberTech Research Team ©<br />Made in India with <span className="text-red-500">❤️🇮🇳</span>
+            Payload developed by Quasar CyberTech Research Team ©<br />
+            Made in India with <span className="text-red-500">❤️🇮🇳</span>
           </p>
         </div>
       </div>
