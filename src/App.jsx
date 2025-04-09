@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import watermark from '/quasarmain.png'; // placed in public folder
+import watermark from '/Quasar.png'; // placed in public folder
 import './App.css';
 
 export default function App() {
@@ -178,8 +178,8 @@ export default function App() {
           )}
         </div>
 
-        {/* Right: Control panel */}
-        <div className="bg-[#320818] p-6 rounded-xl shadow-xl flex flex-col items-center space-y-4">
+        {/* Right: Plain panel without container */}
+        <div className="flex flex-col items-center space-y-4">
           <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Logo" className="w-36" />
           <h1 className="text-2xl font-bold">Clickjacking Test</h1>
 
