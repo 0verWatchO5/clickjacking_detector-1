@@ -156,79 +156,79 @@ export default function App() {
         <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">About</a>
         <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">Mitigation Guide</a>
       </div>
-
-      {/* Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 h-full p-4 gap-4">
-        {/* Iframe Panel */}
-        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl bg-white">
-          <iframe ref={testFrameRef} className="w-full h-full min-h-[400px] opacity-90" title="Test Frame" />
-          {showPoC && (
-            <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>
-              Click Me
-            </div>
-          )}
-        </div>
-
-        {/* Result Panel */}
-        <div className="bg-[#320818] p-6 rounded-xl shadow-xl flex flex-col items-center overflow-auto">
-          <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Logo" className="w-36 mb-2" />
-          <h1 className="text-2xl font-bold text-center mb-4">Clickjacking Test</h1>
-
-          <div className="flex w-full max-w-xl mb-4">
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Enter website URL (with https://)"
-              className="flex-grow p-2 border border-gray-300 rounded-l text-black"
-            />
-            <button onClick={checkURL} className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-r">
-              Test
-            </button>
-          </div>
-
-          {loading && <div className="text-yellow-300 animate-pulse mb-2">Running test...</div>}
-
-          {testResults.isVisible && (
-            <>
-              <div className="w-full max-w-xl bg-red-100 text-black p-4 rounded-lg text-sm mb-2">
-                <p><strong>Site:</strong> {testResults.siteUrl}</p>
-                <p><strong>IP Address:</strong> {ip}</p>
-                <p><strong>Time:</strong> {testResults.testTime}</p>
-                <p><strong>Missing Headers:</strong> <span className="text-red-600 font-bold">{testResults.missingHeaders}</span></p>
+  
+      {/* Centered Layout */}
+      <div className="flex h-full">
+        {/* Left Panel - Iframe */}
+        <div className="w-1/2 flex items-center justify-center p-4">
+          <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-full h-[90%] bg-white">
+            <iframe ref={testFrameRef} className="w-full h-full opacity-90" title="Test Frame" />
+            {showPoC && (
+              <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>
+                Click Me
               </div>
-
-              {testResults.isVulnerable !== null && (
-                <div className={`w-full max-w-xl p-3 text-center font-bold text-white rounded ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'} mb-2`}>
+            )}
+          </div>
+        </div>
+  
+        {/* Right Panel - Form & Results */}
+        <div className="w-1/2 flex flex-col items-center justify-center px-6 overflow-hidden">
+          <div className="text-center max-w-xl w-full">
+            <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Logo" className="w-36 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold mb-6">Clickjacking Test</h1>
+  
+            <div className="flex mb-4">
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Enter website URL"
+                className="flex-grow p-2 rounded-l text-black border"
+              />
+              <button onClick={checkURL} className="bg-blue-500 hover:bg-blue-700 text-white px-4 rounded-r">Test</button>
+            </div>
+  
+            {loading && <div className="text-yellow-300 animate-pulse mb-2">Running test...</div>}
+  
+            {testResults.isVisible && (
+              <>
+                <div className="bg-red-100 text-black p-4 rounded text-sm mb-2 text-left">
+                  <p><strong>Site:</strong> {testResults.siteUrl}</p>
+                  <p><strong>IP Address:</strong> {ip}</p>
+                  <p><strong>Time:</strong> {testResults.testTime}</p>
+                  <p><strong>Missing Headers:</strong> <span className="text-red-600 font-bold">{testResults.missingHeaders}</span></p>
+                </div>
+  
+                <div className={`p-3 text-center font-bold text-white rounded mb-2 ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}>
                   Site is {testResults.isVulnerable ? 'vulnerable' : 'not vulnerable'} to Clickjacking
                 </div>
-              )}
-
-              {testResults.rawHeaders && (
-                <div className="w-full max-w-xl bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-60 font-mono mb-2">
-                  <strong className="text-lime-400">Raw Headers:</strong>
-                  <pre>{testResults.rawHeaders}</pre>
+  
+                {testResults.rawHeaders && (
+                  <div className="bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-40 font-mono mb-2 text-left">
+                    <strong className="text-lime-400">Raw Headers:</strong>
+                    <pre>{testResults.rawHeaders}</pre>
+                  </div>
+                )}
+  
+                <div className="flex justify-between items-center text-xs mt-2">
+                  <label htmlFor="poc-toggle" className="flex items-center gap-2 cursor-pointer">
+                    <input id="poc-toggle" type="checkbox" checked={showPoC} onChange={() => setShowPoC(!showPoC)} />
+                    <span>Enable PoC</span>
+                  </label>
+                  <button onClick={exportPDF} className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded">Export PDF</button>
                 </div>
-              )}
-
-              <div className="w-full max-w-xl flex justify-between items-center text-xs mt-2">
-                <label htmlFor="poc-toggle" className="flex items-center gap-2 cursor-pointer">
-                  <input id="poc-toggle" type="checkbox" checked={showPoC} onChange={() => setShowPoC(!showPoC)} />
-                  <span>Enable PoC button over iframe</span>
-                </label>
-                <button onClick={exportPDF} className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded">Export PDF</button>
-              </div>
-            </>
-          )}
-
-          {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
-
-          <p className="text-xs mt-4 text-center">
-            Payload developed by Quasar CyberTech Research Team ©<br />
-            Made in India with <span className="text-red-500">❤️🇮🇳</span>
-          </p>
+              </>
+            )}
+  
+            {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+  
+            <p className="text-xs mt-6">
+              Payload developed by Quasar CyberTech Security Team ©<br />
+              Made in India with <span className="text-red-500">❤️</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+}  
