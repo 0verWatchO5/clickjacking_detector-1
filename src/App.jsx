@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import watermark from 'https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png'; // placed in public folder
+import watermark from './Quasar.png'; // placed in public folder
 import './App.css';
 
 export default function App() {
