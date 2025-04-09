@@ -1,7 +1,8 @@
+// Updated App.jsx with improved layout and PDF styling (logic untouched)
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import watermark from '/Quasar.png';
+import watermark from '/Quasar.png'; // placed in public folder
 
 export default function App() {
   const [url, setUrl] = useState('');
@@ -12,6 +13,7 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [showPoC, setShowPoC] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const [testResults, setTestResults] = useState({
     isVisible: false,
     siteUrl: '-',
@@ -48,6 +50,7 @@ export default function App() {
 
       const xfo = headers['x-frame-options'];
       const csp = headers['content-security-policy'];
+
       const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
       const hasCSP = csp && /frame-ancestors/i.test(csp);
 
@@ -64,7 +67,7 @@ export default function App() {
         iframe.onload = () => {
           try {
             iframeCanAccessWindow = iframe.contentWindow && iframe.contentWindow.length !== undefined;
-          } catch {
+          } catch (e) {
             iframeCanAccessWindow = false;
           }
           resolve();
@@ -116,7 +119,7 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     const doc = new jsPDF();
     const img = new Image();
     img.src = watermark;
@@ -124,152 +127,114 @@ export default function App() {
     doc.setFillColor('#4d0c26');
     doc.rect(0, 0, 210, 297, 'F');
     doc.setTextColor('#f3cda2');
-
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text('Clickjacking Test Report', 15, 25);
+    doc.setFontSize(22);
+    doc.text('Quasar CyberTech – Clickjacking Report', 15, 20);
 
     doc.setFontSize(12);
-    doc.text(`Site: ${testResults.siteUrl}`, 15, 45);
-    doc.text(`IP Address: ${ip}`, 15, 55);
-    doc.text(`Time: ${testResults.testTime}`, 15, 65);
-    doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 75);
-    doc.text(`Vulnerability: ${testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'}`, 15, 85);
-    doc.text(`Reason: ${testResults.reason}`, 15, 95);
+    doc.text(`Site Tested: ${testResults.siteUrl}`, 15, 35);
+    doc.text(`IP Address: ${ip}`, 15, 45);
+    doc.text(`Test Time: ${testResults.testTime}`, 15, 55);
+    doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
+    doc.text(`Vulnerability Status: ${testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'}`, 15, 75);
+    doc.text(`Reason:`, 15, 85);
 
     doc.setFont('courier', 'normal');
-    doc.setFontSize(10);
-    const lines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
-    doc.text('Raw Headers:', 15, 110);
-    doc.text(lines, 15, 120);
+    const reasonLines = doc.splitTextToSize(testResults.reason, 180);
+    doc.text(reasonLines, 15, 93);
 
-    doc.addImage(img, 'PNG', 150, 10, 45, 20);
-    doc.setFontSize(10);
+    doc.setFont('courier', 'normal');
+    const lines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
+    doc.text('Raw Headers:', 15, 110 + reasonLines.length * 7);
+    doc.text(lines, 15, 118 + reasonLines.length * 7);
+
+    doc.addImage(img, 'PNG', 75, 250, 60, 30);
     doc.setFont('helvetica', 'italic');
-    doc.text('This is a property of Quasar CyberTech.', 15, 285);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CONFIDENTIAL', 105, 293, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text('This is a property of Quasar CyberTech', 15, 290);
+    doc.text('Confidential', 105, 295, null, null, 'center');
 
     doc.save('clickjacking_report.pdf');
   };
 
   return (
-    <div
-      className="flex flex-col min-h-screen"
-      style={{
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        backgroundColor: '#4d0c26',
-        color: '#f3cda2'
-      }}
-    >
-      {/* Top-right static links */}
+    <div className="flex flex-col min-h-screen" style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#4d0c26', color: '#f3cda2' }}>
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
-        <a href="/about.html" className="hover:underline text-yellow-300">About</a>
-        <a href="/defensecj.html" className="hover:underline text-yellow-300">Mitigation Guide</a>
+        <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">About</a>
+        <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">Mitigation Guide</a>
       </div>
 
-      {/* Main layout */}
-      <main className="flex-grow flex flex-col md:flex-row p-4 gap-4">
-        <div className="w-full md:w-1/2 p-4">
-          <iframe
-            ref={testFrameRef}
-            className="w-full h-full min-h-[400px] border-2 border-red-500 rounded-lg"
-            title="Test Frame"
-          />
+      <div className="grid grid-cols-1 md:grid-cols-2 flex-grow gap-2 p-4">
+        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl">
+          <iframe ref={testFrameRef} className="w-full h-full min-h-[400px] opacity-90" title="Test Frame" />
+          <div className="absolute inset-0 bg-white bg-opacity-50 pointer-events-none z-10 rounded-xl" />
+          {showPoC && (
+            <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>Click Me</div>
+          )}
         </div>
 
-        <div className="w-full md:w-1/2 p-6 bg-[#66182f] rounded-lg shadow-xl">
-          <div className="flex justify-center mb-4">
-            <img
-              src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
-              alt="Quasar CyberTech Logo"
-              className="w-36"
-            />
+        <div className="bg-[#320818] p-6 rounded-xl shadow-xl flex flex-col items-center space-y-4">
+          <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Logo" className="w-36" />
+          <h1 className="text-2xl font-bold">Clickjacking Test</h1>
+
+          <div className="flex w-full max-w-xl">
+            <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Enter website URL (with https://)" className="flex-grow p-2 border border-gray-300 rounded-l text-black" />
+            <button onClick={checkURL} className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-r">Test</button>
           </div>
 
-          <h1 className="text-2xl font-bold mb-4 text-center">Clickjacking Vulnerability Test</h1>
-
-          <div className="flex w-full mb-4">
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Enter URL (include https://)"
-              className="flex-grow p-2 rounded-l text-black"
-            />
-            <button onClick={checkURL} className="bg-blue-500 text-white px-4 rounded-r">
-              Test
-            </button>
-          </div>
-
-          {loading && <p className="text-yellow-300 text-center animate-pulse mb-4">Running test...</p>}
+          {loading && <div className="text-yellow-300 animate-pulse">Running test...</div>}
 
           {testResults.isVisible && (
-            <div className="bg-black p-4 rounded-lg text-green-300 mb-4 text-xs overflow-auto max-h-40">
-              <strong className="text-lime-400 block mb-2">Raw Headers:</strong>
-              <pre>{testResults.rawHeaders}</pre>
+            <div className="w-full max-w-xl bg-red-100 text-black p-4 rounded-lg">
+              <p><strong>Site:</strong> {testResults.siteUrl}</p>
+              <p><strong>IP Address:</strong> {ip}</p>
+              <p><strong>Time:</strong> {testResults.testTime}</p>
+              <p><strong>Missing Headers:</strong> <span className="text-red-600 font-bold">{testResults.missingHeaders}</span></p>
             </div>
           )}
 
           {testResults.isVulnerable !== null && (
-            <div className={`text-center font-bold py-2 rounded mb-3 ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}>
-              Site is {testResults.isVulnerable ? 'VULNERABLE' : 'NOT Vulnerable'}
+            <div className={`w-full max-w-xl p-3 text-center font-bold text-white rounded ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}>
+              Site is {testResults.isVulnerable ? 'vulnerable' : 'not vulnerable'} to Clickjacking
             </div>
           )}
 
-          <div className="text-xs text-left mb-2">
-            <p><strong>IP:</strong> {ip}</p>
-            <p><strong>Test Time:</strong> {testResults.testTime}</p>
-            <p><strong>Missing Headers:</strong> {testResults.missingHeaders}</p>
-            <p><strong>Reason:</strong> {testResults.reason}</p>
-          </div>
+          {testResults.rawHeaders && (
+            <div className="w-full max-w-xl bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-60 font-mono">
+              <strong className="text-lime-400">Raw Headers:</strong>
+              <pre>{testResults.rawHeaders}</pre>
+            </div>
+          )}
 
-          <div className="flex items-center justify-between gap-3 text-xs mb-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showPoC}
-                onChange={() => setShowPoC(!showPoC)}
-              />
-              Show PoC Overlay
+          {shareURL && (
+            <div className="w-full max-w-xl flex items-center gap-2 text-xs">
+              <span>Share:</span>
+              <input type="text" readOnly value={shareURL} className="text-black px-2 py-1 rounded border border-gray-300 flex-grow" />
+              <button onClick={handleCopy} className="text-blue-300 hover:underline">{copied ? 'Copied!' : 'COPY'}</button>
+            </div>
+          )}
+
+          <div className="w-full max-w-xl flex justify-between items-center text-xs">
+            <label htmlFor="poc-toggle" className="flex items-center gap-2 cursor-pointer">
+              <input id="poc-toggle" type="checkbox" checked={showPoC} onChange={() => setShowPoC(!showPoC)} />
+              <span>Enable PoC button over iframe</span>
             </label>
-
             {testResults.isVisible && (
-              <button onClick={exportPDF} className="bg-yellow-400 text-black px-3 py-1 rounded hover:bg-yellow-500">
-                Export PDF
-              </button>
+              <button onClick={exportPDF} className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded">Export PDF</button>
             )}
           </div>
 
-          {shareURL && (
-            <div className="text-xs flex items-center gap-2">
-              <span>Share:</span>
-              <input
-                readOnly
-                value={shareURL}
-                className="flex-grow p-1 rounded text-black"
-              />
-              <button onClick={handleCopy} className="text-blue-300 hover:underline">
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-          )}
+          {error && <p className="text-red-500 text-xs">{error}</p>}
 
-          {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+          <p className="text-xs mt-4 text-center">
+            Payload developed by Quasar CyberTech Research Team ©<br />Made in India with <span className="text-red-500">❤️🇮🇳</span>
+          </p>
         </div>
-      </main>
+      </div>
 
-      {/* Professional Footer */}
-      <footer className="w-full mt-10 bg-[#4d0c26] border-t border-[#f3cda2] p-6 text-center text-[#f3cda2] text-sm">
-        <div className="max-w-4xl mx-auto">
-          <img
-            src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
-            alt="Quasar Logo"
-            className="w-24 mx-auto mb-2"
-          />
-          <p className="font-semibold">© 2024 Quasar CyberTech Pvt Ltd | All Rights Reserved</p>
-          <p className="mt-2">This is a property of Quasar CyberTech.</p>
-        </div>
+      <footer className="bg-[#4d0c26] text-[#f3cda2] text-center text-xs py-4 border-t border-pink-900 mt-8">
+        <p className="font-semibold">This is a property of Quasar CyberTech</p>
+        <p className="mt-1">#1, State Bank Colony, Indira Nagar, Nashik, Maharashtra – 422009</p>
       </footer>
     </div>
   );
