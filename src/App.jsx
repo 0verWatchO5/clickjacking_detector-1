@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import watermark from '/Quasar.png'; // placed in public folder
+import watermark from '/Quasar.png';
 import './App.css';
 
 export default function App() {
@@ -9,7 +9,6 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [ip, setIP] = useState('-');
-  const [shareURL, setShareURL] = useState('');
   const [copied, setCopied] = useState(false);
   const [showPoC, setShowPoC] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -46,7 +45,6 @@ export default function App() {
       const headers = res.data.headers || {};
       const ipAddr = res.data.ip || '-';
       setIP(ipAddr);
-      setShareURL(`${window.location.origin}/result?url=${encodeURIComponent(url)}`);
 
       const xfo = headers['x-frame-options'];
       const csp = headers['content-security-policy'];
@@ -113,12 +111,6 @@ export default function App() {
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shareURL);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const exportPDF = async () => {
     const doc = new jsPDF();
     const img = new Image();
@@ -159,29 +151,23 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen" style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#4d0c26', color: '#f3cda2' }}>
-      {/* Top links */}
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
         <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">About</a>
         <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">Mitigation Guide</a>
       </div>
 
-      {/* Main grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 flex-grow gap-2 p-4">
-        {/* Left: Iframe display */}
         <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl">
           <iframe ref={testFrameRef} className="w-full h-full min-h-[400px] opacity-90" title="Test Frame" />
           <div className="absolute inset-0 bg-white bg-opacity-50 pointer-events-none z-10 rounded-xl" />
           {showPoC && (
-            <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>
-              Click Me
-            </div>
+            <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>Click Me</div>
           )}
         </div>
 
-        {/* Right: Plain panel without container */}
-        <div className="flex flex-col items-center space-y-4">
+        <div className="bg-[#320818] p-6 rounded-xl shadow-xl flex flex-col items-center space-y-4">
           <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Logo" className="w-36" />
-          <h1 className="text-2xl font-bold">Clickjacking Test</h1>
+          <h1 className="text-2xl font-bold text-center">Clickjacking Test</h1>
 
           <div className="flex w-full max-w-xl">
             <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Enter website URL (with https://)" className="flex-grow p-2 border border-gray-300 rounded-l text-black" />
@@ -191,44 +177,36 @@ export default function App() {
           {loading && <div className="text-yellow-300 animate-pulse">Running test...</div>}
 
           {testResults.isVisible && (
-            <div className="w-full max-w-xl bg-red-100 text-black p-4 rounded-lg">
-              <p><strong>Site:</strong> {testResults.siteUrl}</p>
-              <p><strong>IP Address:</strong> {ip}</p>
-              <p><strong>Time:</strong> {testResults.testTime}</p>
-              <p><strong>Missing Headers:</strong> <span className="text-red-600 font-bold">{testResults.missingHeaders}</span></p>
-            </div>
-          )}
+            <>
+              <div className="w-full max-w-xl bg-red-100 text-black p-4 rounded-lg">
+                <p><strong>Site:</strong> {testResults.siteUrl}</p>
+                <p><strong>IP Address:</strong> {ip}</p>
+                <p><strong>Time:</strong> {testResults.testTime}</p>
+                <p><strong>Missing Headers:</strong> <span className="text-red-600 font-bold">{testResults.missingHeaders}</span></p>
+              </div>
 
-          {testResults.isVulnerable !== null && (
-            <div className={`w-full max-w-xl p-3 text-center font-bold text-white rounded ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}>
-              Site is {testResults.isVulnerable ? 'vulnerable' : 'not vulnerable'} to Clickjacking
-            </div>
-          )}
+              {testResults.isVulnerable !== null && (
+                <div className={`w-full max-w-xl p-3 text-center font-bold text-white rounded ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}>
+                  Site is {testResults.isVulnerable ? 'vulnerable' : 'not vulnerable'} to Clickjacking
+                </div>
+              )}
 
-          {testResults.rawHeaders && (
-            <div className="w-full max-w-xl bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-60 font-mono">
-              <strong className="text-lime-400">Raw Headers:</strong>
-              <pre>{testResults.rawHeaders}</pre>
-            </div>
-          )}
+              {testResults.rawHeaders && (
+                <div className="w-full max-w-xl bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-60 font-mono">
+                  <strong className="text-lime-400">Raw Headers:</strong>
+                  <pre>{testResults.rawHeaders}</pre>
+                </div>
+              )}
 
-          {shareURL && (
-            <div className="w-full max-w-xl flex items-center gap-2 text-xs">
-              <span>Share:</span>
-              <input type="text" readOnly value={shareURL} className="text-black px-2 py-1 rounded border border-gray-300 flex-grow" />
-              <button onClick={handleCopy} className="text-blue-300 hover:underline">{copied ? 'Copied!' : 'COPY'}</button>
-            </div>
+              <div className="w-full max-w-xl flex justify-between items-center text-xs mt-2">
+                <label htmlFor="poc-toggle" className="flex items-center gap-2 cursor-pointer">
+                  <input id="poc-toggle" type="checkbox" checked={showPoC} onChange={() => setShowPoC(!showPoC)} />
+                  <span>Enable PoC button over iframe</span>
+                </label>
+                <button onClick={exportPDF} className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded">Export PDF</button>
+              </div>
+            </>
           )}
-
-          <div className="w-full max-w-xl flex justify-between items-center text-xs">
-            <label htmlFor="poc-toggle" className="flex items-center gap-2 cursor-pointer">
-              <input id="poc-toggle" type="checkbox" checked={showPoC} onChange={() => setShowPoC(!showPoC)} />
-              <span>Enable PoC button over iframe</span>
-            </label>
-            {testResults.isVisible && (
-              <button onClick={exportPDF} className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded">Export PDF</button>
-            )}
-          </div>
 
           {error && <p className="text-red-500 text-xs">{error}</p>}
 
