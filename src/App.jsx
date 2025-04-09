@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import watermark from '/Quasar.png'; // placed in public folder
+import watermark from '/Quasar.png'; // Logo in public folder
 
 export default function App() {
   const [url, setUrl] = useState('');
@@ -12,7 +12,6 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [showPoC, setShowPoC] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const [testResults, setTestResults] = useState({
     isVisible: false,
     siteUrl: '-',
@@ -49,7 +48,6 @@ export default function App() {
 
       const xfo = headers['x-frame-options'];
       const csp = headers['content-security-policy'];
-
       const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
       const hasCSP = csp && /frame-ancestors/i.test(csp);
 
@@ -112,12 +110,6 @@ export default function App() {
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shareURL);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const exportPDF = async () => {
     const doc = new jsPDF();
     const img = new Image();
@@ -126,32 +118,38 @@ export default function App() {
     doc.setFillColor('#4d0c26');
     doc.rect(0, 0, 210, 297, 'F');
     doc.setTextColor('#f3cda2');
-    doc.setFont('helvetica', 'bold');
 
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
-    doc.text('Clickjacking Test Report', 15, 20);
+    doc.text('Clickjacking Test Report', 15, 25);
 
     doc.setFontSize(12);
-    doc.text(`Site: ${testResults.siteUrl}`, 15, 35);
-    doc.text(`IP Address: ${ip}`, 15, 45);
-    doc.text(`Time: ${testResults.testTime}`, 15, 55);
-    doc.text(`Missing Security Headers: ${testResults.missingHeaders}`, 15, 65);
-    doc.text(`Vulnerability: ${testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'}`, 15, 75);
-    doc.text(`Reason: ${testResults.reason}`, 15, 85);
+    doc.text(`Site: ${testResults.siteUrl}`, 15, 45);
+    doc.text(`IP Address: ${ip}`, 15, 55);
+    doc.text(`Time: ${testResults.testTime}`, 15, 65);
+    doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 75);
+    doc.text(`Vulnerability: ${testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'}`, 15, 85);
+    doc.text(`Reason: ${testResults.reason}`, 15, 95);
 
     doc.setFont('courier', 'normal');
     doc.setFontSize(10);
     const lines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
-    doc.text('Raw Headers:', 15, 100);
-    doc.text(lines, 15, 110);
+    doc.text('Raw Headers:', 15, 110);
+    doc.text(lines, 15, 120);
 
-    doc.addImage(img, 'PNG', 140, 250, 50, 40);
+    doc.addImage(img, 'PNG', 150, 10, 45, 20);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'italic');
+    doc.text('This is a property of Quasar CyberTech.', 15, 285);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CONFIDENTIAL', 105, 293, { align: 'center' });
+
     doc.save('clickjacking_report.pdf');
   };
 
   return (
     <div
-      className="flex h-screen w-full overflow-hidden"
+      className="min-h-screen w-full flex flex-col justify-between"
       style={{
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
         backgroundColor: '#4d0c26',
@@ -159,124 +157,103 @@ export default function App() {
       }}
     >
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
-        <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">About</a>
-        <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">Mitigation Guide</a>
+        <a href="/about.html" className="hover:underline text-yellow-300">About</a>
+        <a href="/defensecj.html" className="hover:underline text-yellow-300">Mitigation Guide</a>
       </div>
 
-      <div className="flex w-full h-full">
-        <div className="w-1/2 p-5 relative">
-          <div className="w-full h-full relative">
-            <iframe
-              ref={testFrameRef}
-              className="w-full h-full border-2 border-red-500 rounded-lg opacity-90"
-              title="Test Frame"
-            />
-            <div className="absolute top-0 left-0 right-0 bottom-0 bg-white bg-opacity-50 rounded-lg pointer-events-none z-10" />
-            {showPoC && (
-              <div
-                className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded opacity-90 cursor-pointer"
-                onClick={() => alert('Fake button clicked (would click iframe content)')}
-              >
-                Click Me
-              </div>
-            )}
-          </div>
+      <div className="flex-grow flex flex-col md:flex-row p-4 gap-4">
+        <div className="w-full md:w-1/2 p-4">
+          <iframe
+            ref={testFrameRef}
+            className="w-full h-full min-h-[400px] border-2 border-red-500 rounded-lg"
+            title="Test Frame"
+          />
         </div>
 
-        <div className="w-1/2 shadow-lg rounded-xl p-5 flex flex-col justify-center items-center relative z-0">
-          <img
-            src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
-            alt="Quasar CyberTech Logo"
-            className="w-36 mb-3"
-          />
-          <h1 className="text-2xl font-bold mb-4">Clickjacking Test</h1>
+        <div className="w-full md:w-1/2 p-6 bg-[#66182f] rounded-lg shadow-xl">
+          <div className="flex justify-center mb-4">
+            <img
+              src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
+              alt="Quasar CyberTech Logo"
+              className="w-36"
+            />
+          </div>
 
-          <div className="flex w-4/5 mb-4">
+          <h1 className="text-2xl font-bold mb-4 text-center">Clickjacking Vulnerability Test</h1>
+
+          <div className="flex w-full mb-4">
             <input
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Enter website URL (with https://)"
-              className="flex-grow p-2 border border-gray-300 rounded-l-lg text-black"
+              placeholder="Enter URL (include https://)"
+              className="flex-grow p-2 rounded-l text-black"
             />
-            <button
-              onClick={checkURL}
-              className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg"
-            >
+            <button onClick={checkURL} className="bg-blue-500 text-white px-4 rounded-r">
               Test
             </button>
           </div>
 
-          {loading && <div className="text-yellow-300 text-sm mb-4 animate-pulse">Running test...</div>}
+          {loading && <p className="text-yellow-300 text-center animate-pulse mb-4">Running test...</p>}
 
           {testResults.isVisible && (
-            <div className="w-4/5 p-4 bg-red-50 rounded-lg mb-4 text-black">
-              <p><strong>Site:</strong> {testResults.siteUrl}</p>
-              <p><strong>IP Address:</strong> {ip}</p>
-              <p><strong>Time:</strong> {testResults.testTime}</p>
-              <p><strong>Missing Security Headers:</strong>
-                <span className="text-red-600 font-bold"> {testResults.missingHeaders}</span>
-              </p>
-            </div>
-          )}
-
-          {testResults.isVulnerable !== null && (
-            <div
-              className={`w-4/5 p-3 text-center font-bold text-white rounded ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}
-            >
-              Site is {testResults.isVulnerable ? 'vulnerable' : 'not vulnerable'} to Clickjacking
-            </div>
-          )}
-
-          {testResults.rawHeaders && (
-            <div className="w-4/5 bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-60 mt-4 font-mono">
-              <strong className="text-lime-400">Raw Response Headers:</strong>
+            <div className="bg-black p-4 rounded-lg text-green-300 mb-4 text-xs overflow-auto max-h-40">
+              <strong className="text-lime-400 block mb-2">Raw Headers:</strong>
               <pre>{testResults.rawHeaders}</pre>
             </div>
           )}
 
-          {shareURL && (
-            <div className="w-4/5 mt-4 flex items-center justify-center text-xs gap-2">
-              <span>Share result via:</span>
-              <input
-                type="text"
-                readOnly
-                value={shareURL}
-                className="text-black px-2 py-1 rounded border border-gray-300 flex-grow"
-              />
-              <button onClick={handleCopy} className="text-blue-300 hover:underline">{copied ? 'Copied!' : 'COPY'}</button>
+          {testResults.isVulnerable !== null && (
+            <div className={`text-center font-bold py-2 rounded mb-3 ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}>
+              Site is {testResults.isVulnerable ? 'VULNERABLE' : 'NOT Vulnerable'}
             </div>
           )}
 
-          <div className="w-4/5 mt-4 flex items-center justify-between gap-3 text-xs">
-            <label htmlFor="poc-toggle" className="flex items-center gap-2 cursor-pointer">
+          <div className="text-xs text-left mb-2">
+            <p><strong>IP:</strong> {ip}</p>
+            <p><strong>Test Time:</strong> {testResults.testTime}</p>
+            <p><strong>Missing Headers:</strong> {testResults.missingHeaders}</p>
+            <p><strong>Reason:</strong> {testResults.reason}</p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 text-xs mb-4">
+            <label className="flex items-center gap-2 cursor-pointer">
               <input
-                id="poc-toggle"
                 type="checkbox"
                 checked={showPoC}
                 onChange={() => setShowPoC(!showPoC)}
               />
-              <span>Click to show object on iframe to capture PoC</span>
+              Show PoC Overlay
             </label>
 
             {testResults.isVisible && (
-              <button
-                className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded"
-                onClick={exportPDF}
-              >
+              <button onClick={exportPDF} className="bg-yellow-400 text-black px-3 py-1 rounded hover:bg-yellow-500">
                 Export PDF
               </button>
             )}
           </div>
 
-          {error && <p className="text-red-500 mt-4">{error}</p>}
+          {shareURL && (
+            <div className="text-xs flex items-center gap-2">
+              <span>Share:</span>
+              <input
+                readOnly
+                value={shareURL}
+                className="flex-grow p-1 rounded text-black"
+              />
+              <button onClick={handleCopy} className="text-blue-300 hover:underline">
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          )}
 
-          <p className="mt-6 text-xs text-center">
-            Payload developed by Quasar CyberTech Research Team ©<br />
-            Made in India with <span className="text-red-600">❤️🇮🇳</span>
-          </p>
+          {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
         </div>
       </div>
+
+      <footer className="text-center p-2 text-xs bg-[#4d0c26] text-[#f3cda2] border-t border-[#f3cda2]">
+        This is a property of Quasar CyberTech.
+      </footer>
     </div>
   );
 }
