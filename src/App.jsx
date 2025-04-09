@@ -162,7 +162,7 @@ export default function App() {
         {/* Left Panel - Iframe */}
         <div className="w-1/2 flex items-center justify-center p-4">
           <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-full h-[90%] bg-white">
-            <iframe ref={testFrameRef} className="w-full h-full opacity-70" title="Test Frame" />
+            <iframe ref={testFrameRef} className="w-full h-full opacity-40" title="Test Frame" />
             {showPoC && (
               <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>
                 Click Me
