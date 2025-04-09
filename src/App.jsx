@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import watermark from '/Quasar.png'; // Logo in public folder
+import watermark from '/Quasar.png';
 
 export default function App() {
   const [url, setUrl] = useState('');
@@ -64,7 +64,7 @@ export default function App() {
         iframe.onload = () => {
           try {
             iframeCanAccessWindow = iframe.contentWindow && iframe.contentWindow.length !== undefined;
-          } catch (e) {
+          } catch {
             iframeCanAccessWindow = false;
           }
           resolve();
@@ -110,7 +110,13 @@ export default function App() {
     }
   };
 
-  const exportPDF = async () => {
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareURL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const exportPDF = () => {
     const doc = new jsPDF();
     const img = new Image();
     img.src = watermark;
@@ -149,19 +155,21 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen w-full flex flex-col justify-between"
+      className="flex flex-col min-h-screen"
       style={{
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
         backgroundColor: '#4d0c26',
         color: '#f3cda2'
       }}
     >
+      {/* Top-right static links */}
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
         <a href="/about.html" className="hover:underline text-yellow-300">About</a>
         <a href="/defensecj.html" className="hover:underline text-yellow-300">Mitigation Guide</a>
       </div>
 
-      <div className="flex-grow flex flex-col md:flex-row p-4 gap-4">
+      {/* Main layout */}
+      <main className="flex-grow flex flex-col md:flex-row p-4 gap-4">
         <div className="w-full md:w-1/2 p-4">
           <iframe
             ref={testFrameRef}
@@ -249,10 +257,19 @@ export default function App() {
 
           {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
         </div>
-      </div>
+      </main>
 
-      <footer className="text-center p-2 text-xs bg-[#4d0c26] text-[#f3cda2] border-t border-[#f3cda2]">
-        This is a property of Quasar CyberTech.
+      {/* Professional Footer */}
+      <footer className="w-full mt-10 bg-[#4d0c26] border-t border-[#f3cda2] p-6 text-center text-[#f3cda2] text-sm">
+        <div className="max-w-4xl mx-auto">
+          <img
+            src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
+            alt="Quasar Logo"
+            className="w-24 mx-auto mb-2"
+          />
+          <p className="font-semibold">© 2024 Quasar CyberTech Pvt Ltd | All Rights Reserved</p>
+          <p className="mt-2">This is a property of Quasar CyberTech.</p>
+        </div>
       </footer>
     </div>
   );

@@ -1,0 +1,29 @@
+.quasar-footer {
+    background-color: #4d0c26;
+    color: #f3cda2;
+    padding: 60px 20px;
+    text-align: center;
+    margin-top: 100px;
+  }
+  
+  .footer-content {
+    max-width: 1000px;
+    margin: auto;
+  }
+  
+  .footer-logo {
+    width: 150px;
+    margin-bottom: 30px;
+  }
+  
+  .footer-text {
+    margin-top: 20px;
+    font-size: 0.95rem;
+  }
+  
+  .footer-ownership {
+    font-style: italic;
+    font-size: 1rem;
+    margin-top: 10px;
+  }
+  
