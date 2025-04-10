@@ -44,7 +44,7 @@ export default function App() {
     setElapsedTime(0);
     timerRef.current = setInterval(() => {
       setElapsedTime(prev => prev + 1);
-    }, 1000);
+    }, 2000);
   };
 
   const stopTimer = () => {
