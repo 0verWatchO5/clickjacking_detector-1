@@ -36,7 +36,7 @@ export default function App() {
       sessionStorage.setItem('shouldRunTest', 'false');
       setTimeout(() => {
         runClickjackingTest(storedUrl);
-      }, 2000);
+      }, 3000);
     }
   }, []);
 
@@ -44,7 +44,7 @@ export default function App() {
     setElapsedTime(0);
     timerRef.current = setInterval(() => {
       setElapsedTime(prev => prev + 1);
-    }, 2000);
+    }, 3000);
   };
 
   const stopTimer = () => {
