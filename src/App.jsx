@@ -166,10 +166,6 @@ export default function App() {
     doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
     doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
 
-    const reasonLines = doc.splitTextToSize(testResults.reason || '', 180);
-    doc.text('Details:', 15, 85);
-    doc.text(reasonLines, 15, 93);
-
     const rawHeadersStartY = 100 + reasonLines.length * 6;
     const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
     doc.text('Raw Headers:', 15, rawHeadersStartY);
