@@ -111,43 +111,62 @@ export default function App() {
     }
   };
 
-  const exportPDF = async () => {
-    const doc = new jsPDF();
-    const img = new Image();
-    img.src = watermark;
+const exportPDF = async () => {
+  const doc = new jsPDF();
+  const img = new Image();
+  img.src = watermark;
 
-    doc.setFillColor('#4d0c26');
-    doc.rect(0, 0, 210, 297, 'F');
-    doc.setTextColor('#f3cda2');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.text('Quasar CyberTech – Clickjacking Report', 15, 20);
+  doc.setFillColor('#4d0c26');
+  doc.rect(0, 0, 210, 297, 'F'); // A4: 210 x 297 mm
+  doc.setTextColor('#f3cda2');
 
-    doc.setFontSize(12);
-    doc.text(`Site Tested: ${testResults.siteUrl}`, 15, 35);
-    doc.text(`IP Address: ${ip}`, 15, 45);
-    doc.text(`Test Time: ${testResults.testTime}`, 15, 55);
-    doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
-    doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
-    doc.text('Reason:', 15, 85);
+  // "Confidential" top-right
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('Confidential', 195, 10, { align: 'right' });
 
-    doc.setFont('courier', 'normal');
-    const reasonLines = doc.splitTextToSize(testResults.reason, 180);
-    doc.text(reasonLines, 15, 93);
+  // Header
+  doc.setFontSize(22);
+  doc.text('Quasar CyberTech – Clickjacking Report', 15, 20);
 
-    doc.setFont('courier', 'normal');
-    const lines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
-    doc.text('Raw Headers:', 15, 110 + reasonLines.length * 7);
-    doc.text(lines, 15, 118 + reasonLines.length * 7);
+  // Report Content
+  doc.setFontSize(12);
+  doc.text(`Site Tested: ${testResults.siteUrl}`, 15, 35);
+  doc.text(`IP Address: ${ip}`, 15, 45);
+  doc.text(`Test Time: ${testResults.testTime}`, 15, 55);
+  doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
+  doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
+  doc.text('Reason:', 15, 85);
 
-    doc.addImage(img, 'PNG', 75, 250, 60, 30);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(10);
-    doc.text('This is a property of Quasar CyberTech', 15, 290);
-    doc.text('Confidential', 105, 295, null, null, 'center');
+  doc.setFont('courier', 'normal');
+  const reasonLines = doc.splitTextToSize(testResults.reason, 180);
+  doc.text(reasonLines, 15, 93);
 
-    doc.save('clickjacking_report.pdf');
-  };
+  const rawHeadersStartY = 100 + reasonLines.length * 6;
+  const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
+  doc.text('Raw Headers:', 15, rawHeadersStartY);
+  doc.text(headerLines, 15, rawHeadersStartY + 8);
+
+  // Watermark image resized proportionally
+  const watermarkWidth = 50;
+  const watermarkHeight = 25;
+  doc.addImage(img, 'PNG', 80, 250, watermarkWidth, watermarkHeight);
+
+  // Footer info
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(10);
+  doc.text('This is a property of Quasar CyberTech', 15, 285);
+
+  // Disclaimer Paragraph (justified formatting)
+  doc.setFont('times', 'normal');
+  doc.setFontSize(9);
+  const disclaimer = `This report and the information contained herein are the proprietary property of Quasar CyberTech and are intended solely for the internal use of the designated client. This document may contain confidential or sensitive information and is shared with the client for review and informational purposes only. It may not be reproduced, distributed, or disclosed to any third party, in whole or in part, without the prior written consent of Quasar CyberTech. All rights reserved © ${new Date().getFullYear()}.`;
+  const disclaimerLines = doc.splitTextToSize(disclaimer, 180);
+  doc.text(disclaimerLines, 15, 295 - disclaimerLines.length * 4);
+
+  doc.save('clickjacking_report.pdf');
+};
+  
 
   return (
     <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative">
@@ -223,7 +242,7 @@ export default function App() {
             {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
   
             <p className="text-xs mt-6">
-              Payload developed by Quasar CyberTech Security Team ©<br />
+              Payload developed by Quasar CyberTech Research Team ©<br />
               Made in India with <span className="text-red-500">❤️</span>
             </p>
           </div>
