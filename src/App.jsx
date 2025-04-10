@@ -155,7 +155,7 @@ export default function App() {
   
     // Watermark - center aligned at bottom
     const watermarkWidth = 25;
-    const watermarkHeight = 30;
+    const watermarkHeight = 18;
     const centerX = (210 - watermarkWidth) / 2;
     const bottomY = 250;
     doc.addImage(img, 'PNG', centerX, bottomY, watermarkWidth, watermarkHeight);
