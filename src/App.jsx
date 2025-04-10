@@ -111,58 +111,66 @@ export default function App() {
     }
   };
 
-const exportPDF = async () => {
-  const doc = new jsPDF();
-  const img = new Image();
-  img.src = watermark;
-
-  doc.setFillColor('#4d0c26');
-  doc.rect(0, 0, 210, 297, 'F'); // A4: 210 x 297 mm
-  doc.setTextColor('#f3cda2');
-
-  // "Confidential" top-right
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text('Confidential', 195, 10, { align: 'right' });
-
-  // Header
-  doc.setFontSize(22);
-  doc.text('Quasar CyberTech – Clickjacking Report', 15, 20);
-
-  // Report Content
-  doc.setFontSize(12);
-  doc.text(`Site Tested: ${testResults.siteUrl}`, 15, 35);
-  doc.text(`IP Address: ${ip}`, 15, 45);
-  doc.text(`Test Time: ${testResults.testTime}`, 15, 55);
-  doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
-  doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
-  doc.text('Reason:', 15, 85);
-
-  doc.setFont('courier', 'normal');
-  const reasonLines = doc.splitTextToSize(testResults.reason, 180);
-  doc.text(reasonLines, 15, 93);
-
-  const rawHeadersStartY = 100 + reasonLines.length * 6;
-  const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
-  doc.text('Raw Headers:', 15, rawHeadersStartY);
-  doc.text(headerLines, 15, rawHeadersStartY + 8);
-
-  // Watermark image resized proportionally
-  const watermarkWidth = 30;
-  const watermarkHeight = 30;
-  doc.addImage(img, 'PNG', 80, 250, watermarkWidth, watermarkHeight);
-
-  // Disclaimer Paragraph (justified formatting)
-  doc.setFont('times', 'normal');
-  doc.setFontSize(8);
-  // Set 50% opacity for disclaimer text
-  doc.setTextColor(243, 205, 162, 0.5); // #f3cda2 with 50% opacity
-  const disclaimer = `This report and the information contained herein are the proprietary property of Quasar CyberTech and are intended solely for the internal use of the designated client. This document may contain confidential or sensitive information and is shared with the client for review and informational purposes only. It may not be reproduced, distributed, or disclosed to any third party, in whole or in part, without the prior written consent of Quasar CyberTech. All rights reserved © ${new Date().getFullYear()}.`;
-  const disclaimerLines = doc.splitTextToSize(disclaimer, 180);
-  doc.text(disclaimerLines, 15, 295 - disclaimerLines.length * 4);
-
-  doc.save('clickjacking_report.pdf');
-};
+  const exportPDF = async () => {
+    const doc = new jsPDF();
+    const img = new Image();
+    img.src = watermark;
+  
+    // Background color
+    doc.setFillColor('#4d0c26');
+    doc.rect(0, 0, 210, 297, 'F'); // A4 size in mm
+  
+    // Set text color to light golden consistently
+    const goldenRGB = [243, 205, 162]; // #f3cda2
+    doc.setTextColor(...goldenRGB);
+  
+    // "Confidential" top-right
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('Confidential', 195, 10, { align: 'right' });
+  
+    // Header
+    doc.setFontSize(22);
+    doc.text('Quasar CyberTech – Clickjacking Report', 15, 20);
+  
+    // Report Content
+    doc.setFontSize(12);
+    doc.text(`Site Tested: ${testResults.siteUrl}`, 15, 35);
+    doc.text(`IP Address: ${ip}`, 15, 45);
+    doc.text(`Test Time: ${testResults.testTime}`, 15, 55);
+    doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
+    doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
+    doc.text('Reason:', 15, 85);
+  
+    // Reason (monospaced style)
+    doc.setFont('courier', 'normal');
+    const reasonLines = doc.splitTextToSize(testResults.reason, 180);
+    doc.text(reasonLines, 15, 93);
+  
+    // Raw headers
+    const rawHeadersStartY = 100 + reasonLines.length * 6;
+    const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
+    doc.text('Raw Headers:', 15, rawHeadersStartY);
+    doc.text(headerLines, 15, rawHeadersStartY + 8);
+  
+    // Watermark - center aligned at bottom
+    const watermarkWidth = 30;
+    const watermarkHeight = 30;
+    const centerX = (210 - watermarkWidth) / 2;
+    const bottomY = 250;
+    doc.addImage(img, 'PNG', centerX, bottomY, watermarkWidth, watermarkHeight);
+  
+    // Disclaimer Paragraph
+    doc.setFont('times', 'normal');
+    doc.setFontSize(8);
+    // Set 50% opacity for disclaimer text
+    doc.setTextColor(...goldenRGB, 0.5);
+    const disclaimer = `This report and the information contained herein are the proprietary property of Quasar CyberTech and are intended solely for the internal use of the designated client. This document may contain confidential or sensitive information and is shared with the client for review and informational purposes only. It may not be reproduced, distributed, or disclosed to any third party, in whole or in part, without the prior written consent of Quasar CyberTech. All rights reserved © ${new Date().getFullYear()}.`;
+    const disclaimerLines = doc.splitTextToSize(disclaimer, 180);
+    doc.text(disclaimerLines, 15, 295 - disclaimerLines.length * 4);
+  
+    doc.save('clickjacking_report.pdf');
+  };
   
 
   return (
