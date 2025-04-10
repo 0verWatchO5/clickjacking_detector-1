@@ -36,7 +36,7 @@ export default function App() {
       sessionStorage.setItem('shouldRunTest', 'false');
       setTimeout(() => {
         runClickjackingTest(storedUrl);
-      }, 300);
+      }, 1000);
     }
   }, []);
 
