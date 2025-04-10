@@ -148,18 +148,15 @@ const exportPDF = async () => {
   doc.text(headerLines, 15, rawHeadersStartY + 8);
 
   // Watermark image resized proportionally
-  const watermarkWidth = 50;
-  const watermarkHeight = 25;
+  const watermarkWidth = 30;
+  const watermarkHeight = 30;
   doc.addImage(img, 'PNG', 80, 250, watermarkWidth, watermarkHeight);
-
-  // Footer info
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(10);
-  doc.text('This is a property of Quasar CyberTech', 15, 285);
 
   // Disclaimer Paragraph (justified formatting)
   doc.setFont('times', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8);
+  // Set 50% opacity for disclaimer text
+  doc.setTextColor(243, 205, 162, 0.5); // #f3cda2 with 50% opacity
   const disclaimer = `This report and the information contained herein are the proprietary property of Quasar CyberTech and are intended solely for the internal use of the designated client. This document may contain confidential or sensitive information and is shared with the client for review and informational purposes only. It may not be reproduced, distributed, or disclosed to any third party, in whole or in part, without the prior written consent of Quasar CyberTech. All rights reserved © ${new Date().getFullYear()}.`;
   const disclaimerLines = doc.splitTextToSize(disclaimer, 180);
   doc.text(disclaimerLines, 15, 295 - disclaimerLines.length * 4);
