@@ -39,61 +39,73 @@ export default function App() {
       reason: '',
       rawHeaders: ''
     });
-
+  
     try {
       const res = await axios.post('/.netlify/functions/checkHeaders', { url });
       const headers = res.data.headers || {};
       const ipAddr = res.data.ip || '-';
       setIP(ipAddr);
-
+  
       const xfo = headers['x-frame-options'];
       const csp = headers['content-security-policy'];
-
+  
       const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
       const hasCSP = csp && /frame-ancestors/i.test(csp);
-
+  
       const missingHeaders = [];
       if (!hasXFO) missingHeaders.push('X-Frame-Options');
       if (!hasCSP) missingHeaders.push('CSP frame-ancestors');
-
-      let iframeCanAccessWindow = false;
-
+  
+      let iframeLoaded = false;
+  
       const loadPromise = new Promise((resolve) => {
         const iframe = testFrameRef.current;
         if (!iframe) return resolve();
-
+  
         iframe.onload = () => {
-          try {
-            iframeCanAccessWindow = iframe.contentWindow && iframe.contentWindow.length !== undefined;
-          } catch (e) {
-            iframeCanAccessWindow = false;
-          }
+          iframeLoaded = true;
           resolve();
         };
-
+  
         iframe.onerror = () => resolve();
         iframe.src = url;
       });
-
+  
       const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000));
       await Promise.race([loadPromise, timeoutPromise]);
-
-      const vulnerable = missingHeaders.length > 0 && iframeCanAccessWindow;
-
+  
+      // Final verdict logic
+      let vulnerable = false;
+      let reason = '';
+  
+      if (!iframeLoaded) {
+        vulnerable = false;
+        reason = missingHeaders.length
+          ? 'Page refused to render in iframe, even though headers are missing. Possibly protected by other mechanisms.'
+          : 'Page refused to render in iframe, protected.';
+      } else {
+        if (!hasXFO) {
+          vulnerable = true;
+          reason = 'Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.';
+        } else if (!hasCSP) {
+          vulnerable = false;
+          reason = 'Page loaded in iframe but has X-Frame-Options. Missing CSP frame-ancestors.';
+        } else {
+          vulnerable = false;
+          reason = 'Page loaded in iframe but has both headers. Should be safe.';
+        }
+      }
+  
       setTestResults({
         isVisible: true,
         siteUrl: url,
         testTime: new Date().toUTCString(),
-        missingHeaders: missingHeaders.length > 0 ? missingHeaders.join(', ') : 'None - Site is protected',
+        missingHeaders: missingHeaders.length ? missingHeaders.join(', ') : 'None - Site is protected',
         isVulnerable: vulnerable,
-        reason: vulnerable
-          ? 'Page is embeddable and missing required security headers'
-          : missingHeaders.length > 0
-            ? 'Page rendered but has necessary headers'
-            : 'Page refused to render in iframe (likely protected by headers or other mechanisms)',
+        reason,
         rawHeaders: JSON.stringify(headers, null, 2)
       });
-
+  
       setResult(res.data);
     } catch (err) {
       setError(err.response?.data?.error || 'Request failed');
@@ -110,6 +122,7 @@ export default function App() {
       setLoading(false);
     }
   };
+  
 
   const exportPDF = async () => {
     const doc = new jsPDF();
