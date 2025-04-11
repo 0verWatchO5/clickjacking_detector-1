@@ -189,27 +189,36 @@ export default function App() {
 
     // changes by w0lf start
     const rawHeadersStartY = 85;
-    const headerBoxHeight = 80;
     const headerBoxWidth = 180;
     const headerBoxX = 15;
     const headerBoxY = rawHeadersStartY + 5;
     const borderRadius = 3; // subtle rounding
 
+    // Split the text first to determine height
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(10);
+    const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', headerBoxWidth - 8);
+    const lineHeight = 4.5; // fine-tuned for 10pt monospace
+    const headerBoxHeight = headerLines.length * lineHeight + 8; // +8 for padding
+
+    // Draw the box
     doc.setFillColor(109, 28, 49); // light maroon (adjusted)
     doc.setDrawColor(...goldenRGB); // golden border
     doc.roundedRect(headerBoxX, headerBoxY, headerBoxWidth, headerBoxHeight, borderRadius, borderRadius, 'FD');
 
+    // Draw title
     doc.setTextColor(...goldenRGB);
     doc.setFont('courier', 'bold');
     doc.setFontSize(12);
     doc.text('Raw Headers:', 15, rawHeadersStartY);
 
+    // Draw header content
     doc.setTextColor(...goldenRGB);
     doc.setFont('courier', 'normal');
-    doc.setFontSize(8);
-    const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', headerBoxWidth - 8);
-    doc.text(headerLines, headerBoxX + 4, headerBoxY + 8); // better spacing
+    doc.setFontSize(10);
+    doc.text(headerLines, headerBoxX + 4, headerBoxY + 6); // vertical padding inside box
     // changes by w0lf end
+
 
     const watermarkWidth = 25;
     const watermarkHeight = 18;
