@@ -349,7 +349,7 @@ export default function App() {
   
       {/* Left Panel: Iframe */}
       <div className="w-1/2 flex items-center justify-center p-4">
-        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-[90%] h-[1000px] bg-white">
+        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-[90%] h-[700px] bg-white">
           <iframe
             ref={testFrameRef}
             className="w-full h-full opacity-40"
