@@ -208,8 +208,6 @@ export default function App() {
       setLoading(false);
     }
   };
-}
-
 
   const exportPDF = async () => {
     const doc = new jsPDF();
@@ -415,4 +413,4 @@ export default function App() {
       </div>
     </div>
   );
-
+}
