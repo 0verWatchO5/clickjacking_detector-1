@@ -179,7 +179,7 @@ export default function App() {
     doc.setFillColor("#4d0c26");
     doc.rect(0, 0, 210, 297, "F");
 
-    const goldenRGB = [243, 205, 162];
+    goldenRGB = [243, 205, 162];
     doc.setTextColor(...goldenRGB);
 
     doc.setFontSize(12);
@@ -194,76 +194,103 @@ export default function App() {
       75
     );
 
-    //changes by w0lf
-    // Header: Confidential + Title with golden line
-    doc.setTextColor(...goldenRGB);
-    doc.setFont("courier", "bold");
-    doc.setFontSize(10);
-    doc.text("Confidential", 195, 10, { align: "right" });
+    //changes by w0lf start
+    // Define your color constants
+    goldenRGB = [255, 204, 153];
 
-    // Golden horizontal line below "Confidential"
-    doc.setDrawColor(...goldenRGB);
-    doc.setLineWidth(0.5);
-    doc.line(15, 14, 195, 14); // from left to right edge
+    // Function to apply consistent page styling (background, headers, lines)
+    function applyHeader(doc, goldenRGB) {
+      // Full maroon background for consistency
+      doc.setFillColor(44, 0, 22); // Maroon
+      doc.rect(0, 0, 210, 297, "F");
 
-    // Title below the line with some spacing
-    doc.setFontSize(22);
-    doc.setFont("helvetica", "bold");
-    doc.text("Quasar CyberTech – Clickjacking Report", 15, 26); // add line spacing here
+      // Header: Confidential
+      doc.setTextColor(...goldenRGB);
+      doc.setFont("courier", "bold");
+      doc.setFontSize(10);
+      doc.text("Confidential", 195, 10, { align: "right" });
+
+      // Golden horizontal line
+      doc.setDrawColor(...goldenRGB);
+      doc.setLineWidth(0.5);
+      doc.line(15, 14, 195, 14);
+
+      // Report Title
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text("Quasar CyberTech – Clickjacking Report", 15, 26);
+    }
 
     // -----------------
     // Raw Headers Section
     // -----------------
-    const rawHeadersStartY = 85;
     const headerBoxWidth = 180;
     const headerBoxX = 15;
     const borderRadius = 3;
-
-    doc.setFont("courier", "normal");
-    doc.setFontSize(10);
-    const headerLines = doc.splitTextToSize(
-      testResults.rawHeaders || "",
-      headerBoxWidth - 8
-    );
     const lineHeight = 4.5;
-    const headerBoxHeight = headerLines.length * lineHeight + 8;
 
-    let headerBoxY = rawHeadersStartY + 5;
     const pageHeight = 297;
+    const topMargin = 40; // extra spacing to avoid title overlap
     const bottomMargin = 25;
-    const availableHeight = pageHeight - bottomMargin;
+    const boxPaddingTop = 10;
+    const boxPaddingBottom = 10;
 
-    // Check if the box will overflow
-    if (headerBoxY + headerBoxHeight > availableHeight) {
-      doc.addPage();
-      headerBoxY = 20; // Reset position on new page
+    const rawHeaders = testResults.rawHeaders || "";
+    const headerLines = doc.splitTextToSize(rawHeaders, headerBoxWidth - 10);
+    const maxLinesPerPage = Math.floor(
+      (pageHeight -
+        topMargin -
+        bottomMargin -
+        boxPaddingTop -
+        boxPaddingBottom) /
+        lineHeight
+    );
+    const numPagesNeeded = Math.ceil(headerLines.length / maxLinesPerPage);
+
+    let currentLineIndex = 0;
+
+    for (let i = 0; i < numPagesNeeded; i++) {
+      if (i > 0) doc.addPage();
+
+      applyHeader(doc, goldenRGB);
+
+      const linesThisPage = headerLines.slice(
+        currentLineIndex,
+        currentLineIndex + maxLinesPerPage
+      );
+      const boxHeight =
+        linesThisPage.length * lineHeight + boxPaddingTop + boxPaddingBottom;
+      const boxY = topMargin + 8;
+
+      // Draw section title
+      doc.setTextColor(...goldenRGB);
+      doc.setFont("courier", "bold");
+      doc.setFontSize(12);
+      doc.text("Raw Headers:", headerBoxX, topMargin);
+
+      // Draw background box
+      doc.setFillColor(109, 28, 49); // maroon
+      doc.setDrawColor(...goldenRGB);
+      doc.roundedRect(
+        headerBoxX,
+        boxY,
+        headerBoxWidth,
+        boxHeight,
+        borderRadius,
+        borderRadius,
+        "FD"
+      );
+
+      // Write header lines inside box
+      doc.setFont("courier", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...goldenRGB);
+      doc.text(linesThisPage, headerBoxX + 4, boxY + boxPaddingTop);
+
+      currentLineIndex += maxLinesPerPage;
     }
 
-    // Draw the maroon box with golden border
-    doc.setFillColor(109, 28, 49);
-    doc.setDrawColor(...goldenRGB);
-    doc.roundedRect(
-      headerBoxX,
-      headerBoxY,
-      headerBoxWidth,
-      headerBoxHeight,
-      borderRadius,
-      borderRadius,
-      "FD"
-    );
-
-    // Draw section title above the box
-    doc.setTextColor(...goldenRGB);
-    doc.setFont("courier", "bold");
-    doc.setFontSize(12);
-    doc.text("Raw Headers:", headerBoxX, headerBoxY - 6); // position above the container
-
-    // Draw the header content
-    doc.setFont("courier", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...goldenRGB);
-    doc.text(headerLines, headerBoxX + 4, headerBoxY + 6); // slightly padded inside the box
-    //changes by w0lf
+    //changes by w0lf end
 
     const watermarkWidth = 25;
     const watermarkHeight = 18;
