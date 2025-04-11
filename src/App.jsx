@@ -302,9 +302,9 @@ export default function App() {
         </a>
       </div>
 
-      <div className="flex h-full flex-col md:flex-row">
-        <div className="md:w-1/2 w-full flex items-center justify-center p-4 h-1/2 md:h-full">
-          <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-full h-full bg-white">
+      <div className="flex h-full">
+        <div className="w-1/2 flex items-center justify-center p-4">
+          <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-full h-[90%] bg-white">
             <iframe
               ref={testFrameRef}
               className="w-full h-full opacity-40"
@@ -323,7 +323,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="md:w-1/2 w-full flex flex-col items-center justify-center px-6 py-4 md:py-0 overflow-y-auto max-h-[50%] md:max-h-full">
+        <div className="w-1/2 flex flex-col items-center justify-center px-6 overflow-hidden">
           <div className="text-center max-w-xl w-full">
             <img
               src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
@@ -332,31 +332,31 @@ export default function App() {
             />
             <h1 className="text-3xl font-bold mb-6">Clickjacking Test</h1>
 
-            <div className="flex flex-col sm:flex-row mb-4">
+            <div className="flex mb-4">
               <input
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="Enter website URL"
-                className="p-2 rounded-t sm:rounded-l sm:rounded-tr-none sm:rounded-br-none text-black border"
+                className="flex-grow p-2 rounded-l text-black border"
               />
               <button
                 onClick={checkURL}
-                className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 sm:py-0 sm:rounded-r sm:rounded-t-none"
+                className="bg-blue-500 hover:bg-blue-700 text-white px-4 rounded-r"
               >
                 Test
               </button>
             </div>
 
             {loading && (
-              <>
-                <div className="text-yellow-300 animate-pulse mb-2">
-                  Running test...
-                </div>
-                <div className="text-yellow-400 text-xs mb-2">
-                  Elapsed Time: {elapsedTime} second{elapsedTime !== 1 ? "s" : ""}
-                </div>
-              </>
+              <div className="text-yellow-300 animate-pulse mb-2">
+                Running test...
+              </div>
+            )}
+            {loading && (
+              <div className="text-yellow-400 text-xs mb-2">
+                Elapsed Time: {elapsedTime} second{elapsedTime !== 1 ? "s" : ""}
+              </div>
             )}
 
             {testResults.isVisible && (
@@ -384,7 +384,9 @@ export default function App() {
                     testResults.isVulnerable ? "bg-red-600" : "bg-green-600"
                   }`}
                 >
-                  Site is {testResults.isVulnerable ? "vulnerable" : "not vulnerable"} to Clickjacking
+                  Site is{" "}
+                  {testResults.isVulnerable ? "vulnerable" : "not vulnerable"}{" "}
+                  to Clickjacking
                 </div>
 
                 {testResults.rawHeaders && (
@@ -394,7 +396,7 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row justify-between items-center text-xs mt-2 gap-2">
+                <div className="flex justify-between items-center text-xs mt-2">
                   <label
                     htmlFor="poc-toggle"
                     className="flex items-center gap-2 cursor-pointer"
