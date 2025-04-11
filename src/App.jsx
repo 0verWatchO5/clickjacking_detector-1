@@ -217,17 +217,6 @@ export default function App() {
       75
     );
   
-    // Mitigation Box
-    const boxX = 15;
-    const boxY = 90;
-    const boxWidth = 180;
-    const boxHeight = 80;
-    const borderRadius = 3;
-  
-    doc.setFillColor(109, 28, 49);
-    doc.setDrawColor(...goldenRGB);
-    doc.roundedRect(boxX, boxY, boxWidth, boxHeight, borderRadius, borderRadius, "FD");
-  
     // Mitigation Title
     doc.setFont("courier", "bold");
     doc.setFontSize(12);
