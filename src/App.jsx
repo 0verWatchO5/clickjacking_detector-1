@@ -188,9 +188,24 @@ export default function App() {
     doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
 
     const rawHeadersStartY = 85;
-    const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
+    const headerBoxHeight = 80;
+    const headerBoxWidth = 180;
+    const headerBoxX = 15;
+    const headerBoxY = rawHeadersStartY + 5;
+
+    // Draw dark background box
+    doc.setFillColor(33, 33, 33); // Dark gray
+    doc.rect(headerBoxX, headerBoxY, headerBoxWidth, headerBoxHeight, 'F');
+
+    // Write heading
+    doc.setTextColor(...goldenRGB);
     doc.text('Raw Headers:', 15, rawHeadersStartY);
-    doc.text(headerLines, 15, rawHeadersStartY + 8);
+
+    // Write raw headers on top of the dark box in light green
+    doc.setTextColor(144, 238, 144); // Light green
+    const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', 176);
+    doc.text(headerLines, 17, headerBoxY + 6);
+
 
     const watermarkWidth = 25;
     const watermarkHeight = 18;
