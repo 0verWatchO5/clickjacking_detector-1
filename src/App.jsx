@@ -326,7 +326,8 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative">
+    <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative flex">
+      {/* Top-right nav links */}
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
         <a
           href="/about.html"
@@ -345,17 +346,15 @@ export default function App() {
           Mitigation Guide
         </a>
       </div>
-
-    <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative">
-      {/* ... rest of JSX remains the same, except iframe loading indicator ... */}
+  
+      {/* Left Panel: Iframe */}
       <div className="w-1/2 flex items-center justify-center p-4">
-      <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-[90%] h-[500px] bg-white">
-        <iframe
-          ref={testFrameRef}
-          className="w-full h-full opacity-40"
-          title="Test Frame"
-        />
-
+        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-[90%] h-[500px] bg-white">
+          <iframe
+            ref={testFrameRef}
+            className="w-full h-full opacity-40"
+            title="Test Frame"
+          />
           {iframeLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
               <div className="text-black font-bold animate-pulse">
@@ -375,112 +374,112 @@ export default function App() {
           )}
         </div>
       </div>
-
-        <div className="w-1/2 flex flex-col items-center justify-center px-6 overflow-hidden">
-          <div className="text-center max-w-xl w-full">
-            <img
-              src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
-              alt="Logo"
-              className="w-36 mx-auto mb-4"
+  
+      {/* Right Panel: Controls and Results */}
+      <div className="w-1/2 flex flex-col items-center justify-center px-6 overflow-auto max-h-screen">
+        <div className="text-center max-w-xl w-full">
+          <img
+            src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
+            alt="Logo"
+            className="w-36 mx-auto mb-4"
+          />
+          <h1 className="text-3xl font-bold mb-6">Clickjacking Test</h1>
+  
+          <div className="flex mb-4">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Enter website URL"
+              className="flex-grow p-2 rounded-l text-black border"
             />
-            <h1 className="text-3xl font-bold mb-6">Clickjacking Test</h1>
-
-            <div className="flex mb-4">
-              <input
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="Enter website URL"
-                className="flex-grow p-2 rounded-l text-black border"
-              />
-              <button
-                onClick={checkURL}
-                className="bg-blue-500 hover:bg-blue-700 text-white px-4 rounded-r"
-              >
-                Test
-              </button>
-            </div>
-
-            {loading && (
-              <div className="text-yellow-300 animate-pulse mb-2">
-                Running test...
-              </div>
-            )}
-            {loading && (
-              <div className="text-yellow-400 text-xs mb-2">
-                Elapsed Time: {elapsedTime} second{elapsedTime !== 1 ? "s" : ""}
-              </div>
-            )}
-
-            {testResults.isVisible && (
-              <>
-                <div className="bg-red-100 text-black p-4 rounded text-sm mb-2 text-left">
-                  <p>
-                    <strong>Site:</strong> {testResults.siteUrl}
-                  </p>
-                  <p>
-                    <strong>IP Address:</strong> {ip}
-                  </p>
-                  <p>
-                    <strong>Time:</strong> {testResults.testTime}
-                  </p>
-                  <p>
-                    <strong>Missing Headers:</strong>{" "}
-                    <span className="text-red-600 font-bold">
-                      {testResults.missingHeaders}
-                    </span>
-                  </p>
-                </div>
-
-                <div
-                  className={`p-3 text-center font-bold text-white rounded mb-2 ${
-                    testResults.isVulnerable ? "bg-red-600" : "bg-green-600"
-                  }`}
-                >
-                  Site is{" "}
-                  {testResults.isVulnerable ? "vulnerable" : "not vulnerable"}{" "}
-                  to Clickjacking
-                </div>
-
-                {testResults.rawHeaders && (
-                  <div className="bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-40 font-mono mb-2 text-left">
-                    <strong className="text-lime-400">Raw Headers:</strong>
-                    <pre>{testResults.rawHeaders}</pre>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center text-xs mt-2">
-                  <label
-                    htmlFor="poc-toggle"
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <input
-                      id="poc-toggle"
-                      type="checkbox"
-                      checked={showPoC}
-                      onChange={() => setShowPoC(!showPoC)}
-                    />
-                    <span>Enable PoC</span>
-                  </label>
-                  <button
-                    onClick={exportPDF}
-                    className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded"
-                  >
-                    Export PDF
-                  </button>
-                </div>
-              </>
-            )}
-
-            {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
-
-            <p className="text-xs mt-6">
-              Payload developed by Quasar CyberTech Research Team ©<br />
-              Made in India with <span className="text-red-500">❤️</span>
-            </p>
+            <button
+              onClick={checkURL}
+              className="bg-blue-500 hover:bg-blue-700 text-white px-4 rounded-r"
+            >
+              Test
+            </button>
           </div>
+  
+          {loading && (
+            <div className="text-yellow-300 animate-pulse mb-2">
+              Running test...
+            </div>
+          )}
+          {loading && (
+            <div className="text-yellow-400 text-xs mb-2">
+              Elapsed Time: {elapsedTime} second{elapsedTime !== 1 ? "s" : ""}
+            </div>
+          )}
+  
+          {testResults.isVisible && (
+            <>
+              <div className="bg-red-100 text-black p-4 rounded text-sm mb-2 text-left">
+                <p>
+                  <strong>Site:</strong> {testResults.siteUrl}
+                </p>
+                <p>
+                  <strong>IP Address:</strong> {ip}
+                </p>
+                <p>
+                  <strong>Time:</strong> {testResults.testTime}
+                </p>
+                <p>
+                  <strong>Missing Headers:</strong>{" "}
+                  <span className="text-red-600 font-bold">
+                    {testResults.missingHeaders}
+                  </span>
+                </p>
+              </div>
+  
+              <div
+                className={`p-3 text-center font-bold text-white rounded mb-2 ${
+                  testResults.isVulnerable ? "bg-red-600" : "bg-green-600"
+                }`}
+              >
+                Site is{" "}
+                {testResults.isVulnerable ? "vulnerable" : "not vulnerable"} to
+                Clickjacking
+              </div>
+  
+              {testResults.rawHeaders && (
+                <div className="bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-40 font-mono mb-2 text-left">
+                  <strong className="text-lime-400">Raw Headers:</strong>
+                  <pre>{testResults.rawHeaders}</pre>
+                </div>
+              )}
+  
+              <div className="flex justify-between items-center text-xs mt-2">
+                <label
+                  htmlFor="poc-toggle"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    id="poc-toggle"
+                    type="checkbox"
+                    checked={showPoC}
+                    onChange={() => setShowPoC(!showPoC)}
+                  />
+                  <span>Enable PoC</span>
+                </label>
+                <button
+                  onClick={exportPDF}
+                  className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded"
+                >
+                  Export PDF
+                </button>
+              </div>
+            </>
+          )}
+  
+          {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+  
+          <p className="text-xs mt-6">
+            Payload developed by Quasar CyberTech Research Team ©<br />
+            Made in India with <span className="text-red-500">❤️</span>
+          </p>
         </div>
       </div>
     </div>
   );
-}
+}  
