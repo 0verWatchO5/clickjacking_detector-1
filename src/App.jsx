@@ -93,7 +93,7 @@ export default function App() {
       const timeout = setTimeout(() => {
         setIframeLoading(false);
         resolve(false);
-      }, 10000);
+      },20000);
 
       iframe.onload = () => {
         clearTimeout(timeout);
@@ -346,7 +346,6 @@ export default function App() {
         </a>
       </div>
 
-      return (
     <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative">
       {/* ... rest of JSX remains the same, except iframe loading indicator ... */}
       <div className="w-1/2 flex items-center justify-center p-4">
