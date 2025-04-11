@@ -187,6 +187,21 @@ export default function App() {
     doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
     doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
 
+    // Header: Confidential + Title with golden line
+    doc.setTextColor(...goldenRGB);
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(10);
+    doc.text('Confidential', 195, 10, { align: 'right' });
+
+    // Golden horizontal line between "Confidential" and title
+    doc.setDrawColor(...goldenRGB);
+    doc.setLineWidth(0.5); // thin golden line
+    doc.line(15, 14, 195, 14); // full-width line just below "Confidential"
+
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Quasar CyberTech – Clickjacking Report', 15, 22); // spaced below the line
+
     // changes by w0lf start
     const rawHeadersStartY = 85;
     const headerBoxWidth = 180;
@@ -218,7 +233,6 @@ export default function App() {
     doc.setFontSize(10);
     doc.text(headerLines, headerBoxX + 4, headerBoxY + 6); // vertical padding inside box
     // changes by w0lf end
-
 
     const watermarkWidth = 25;
     const watermarkHeight = 18;
