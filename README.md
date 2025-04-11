@@ -3,7 +3,7 @@
 A sleek, client-friendly **Clickjacking testing tool** built with **React**, powered by **Netlify Functions** and **jsPDF**. This tool helps assess whether a website is vulnerable to clickjacking attacks by analyzing its response headers and iframe behavior.
 
 <p align="center">
-  <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Quasar CyberTech Logo" width="500"/>
+  <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Quasar CyberTech Logo" width="300"/>
 </p>
 
 ---
