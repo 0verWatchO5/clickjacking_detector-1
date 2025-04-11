@@ -329,27 +329,24 @@ export default function App() {
     <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative flex">
       {/* Top-right nav links */}
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
-        <a
-          href="/about.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:underline text-yellow-300"
-        >
-          About
-        </a>
-        <a
-          href="/defensecj.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:underline text-yellow-300"
-        >
-          Mitigation Guide
-        </a>
-      </div>
+  <button
+    onClick={() => window.open("/about.html", "_blank")}
+    className="bg-blue-300 hover:bg-blue-400 text-black px-3 py-1 rounded-md border border-blue-500"
+  >
+    About
+  </button>
+  <button
+    onClick={() => window.open("/defensecj.html", "_blank")}
+    className="bg-blue-300 hover:bg-blue-400 text-black px-3 py-1 rounded-md border border-blue-500"
+  >
+    Mitigation Guide
+  </button>
+</div>
+
   
       {/* Left Panel: Iframe */}
       <div className="w-1/2 flex items-center justify-center p-4">
-        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-[90%] h-[700px] bg-white">
+        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-[90%] h-[600px] bg-white">
           <iframe
             ref={testFrameRef}
             className="w-full h-full opacity-40"
