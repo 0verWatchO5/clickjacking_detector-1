@@ -209,7 +209,7 @@ export default function App() {
     // Title below the line with some spacing
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
-    doc.text("Quasar CyberTech – Clickjacking Report", 15, 26); // add line spacing here
+    doc.text("Quasar CyberTech – Clickjacking Report", 15, 26);
 
     // -----------------
     // Raw Headers Section
@@ -221,48 +221,77 @@ export default function App() {
 
     doc.setFont("courier", "normal");
     doc.setFontSize(10);
+
     const headerLines = doc.splitTextToSize(
       testResults.rawHeaders || "",
       headerBoxWidth - 8
     );
     const lineHeight = 4.5;
-    const headerBoxHeight = headerLines.length * lineHeight + 8;
 
-    let headerBoxY = rawHeadersStartY + 5;
     const pageHeight = 297;
+    const topMargin = 20;
     const bottomMargin = 25;
-    const availableHeight = pageHeight - bottomMargin;
-
-    // Check if the box will overflow
-    if (headerBoxY + headerBoxHeight > availableHeight) {
-      doc.addPage();
-      headerBoxY = 20; // Reset position on new page
-    }
-
-    // Draw the maroon box with golden border
-    doc.setFillColor(109, 28, 49);
-    doc.setDrawColor(...goldenRGB);
-    doc.roundedRect(
-      headerBoxX,
-      headerBoxY,
-      headerBoxWidth,
-      headerBoxHeight,
-      borderRadius,
-      borderRadius,
-      "FD"
+    const maxLinesPerPage = Math.floor(
+      (pageHeight - rawHeadersStartY - bottomMargin) / lineHeight
     );
+    const numPagesNeeded = Math.ceil(headerLines.length / maxLinesPerPage);
 
-    // Draw section title above the box
-    doc.setTextColor(...goldenRGB);
-    doc.setFont("courier", "bold");
-    doc.setFontSize(12);
-    doc.text("Raw Headers:", headerBoxX, headerBoxY - 6); // position above the container
+    let currentLineIndex = 0;
 
-    // Draw the header content
-    doc.setFont("courier", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(...goldenRGB);
-    doc.text(headerLines, headerBoxX + 4, headerBoxY + 6); // slightly padded inside the box
+    for (let i = 0; i < numPagesNeeded; i++) {
+      if (i > 0) {
+        doc.addPage();
+
+        // Reapply header & title on new page
+        doc.setTextColor(...goldenRGB);
+        doc.setFont("courier", "bold");
+        doc.setFontSize(10);
+        doc.text("Confidential", 195, 10, { align: "right" });
+
+        doc.setDrawColor(...goldenRGB);
+        doc.setLineWidth(0.5);
+        doc.line(15, 14, 195, 14);
+
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.text("Quasar CyberTech – Clickjacking Report", 15, 26);
+      }
+
+      const currentY = i === 0 ? rawHeadersStartY : topMargin + 5;
+      const linesThisPage = headerLines.slice(
+        currentLineIndex,
+        currentLineIndex + maxLinesPerPage
+      );
+      const boxHeight = linesThisPage.length * lineHeight + 8;
+      const boxY = currentY + 5;
+
+      // Draw maroon box with golden border
+      doc.setFillColor(109, 28, 49);
+      doc.setDrawColor(...goldenRGB);
+      doc.roundedRect(
+        headerBoxX,
+        boxY,
+        headerBoxWidth,
+        boxHeight,
+        borderRadius,
+        borderRadius,
+        "FD"
+      );
+
+      // Draw section title (on each page)
+      doc.setTextColor(...goldenRGB);
+      doc.setFont("courier", "bold");
+      doc.setFontSize(12);
+      doc.text("Raw Headers:", headerBoxX, currentY); // above the container
+
+      // Draw the header content
+      doc.setFont("courier", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...goldenRGB);
+      doc.text(linesThisPage, headerBoxX + 4, boxY + 6); // slightly padded inside the box
+
+      currentLineIndex += maxLinesPerPage;
+    }
     //changes by w0lf
 
     const watermarkWidth = 25;
