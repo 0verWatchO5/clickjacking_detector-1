@@ -1,14 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
-import jsPDF from 'jspdf';
-import watermark from '/quasarmain.png';
-import './App.css';
+import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import jsPDF from "jspdf";
+import watermark from "/quasarmain.png";
+import "./App.css";
 
 export default function App() {
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [ip, setIP] = useState('-');
+  const [ip, setIP] = useState("-");
   const [copied, setCopied] = useState(false);
   const [showPoC, setShowPoC] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,24 +16,24 @@ export default function App() {
 
   const [testResults, setTestResults] = useState({
     isVisible: false,
-    siteUrl: '-',
-    testTime: '-',
-    missingHeaders: '-',
+    siteUrl: "-",
+    testTime: "-",
+    missingHeaders: "-",
     isVulnerable: null,
-    reason: '',
-    rawHeaders: ''
+    reason: "",
+    rawHeaders: "",
   });
 
   const testFrameRef = useRef(null);
   const timerRef = useRef(null);
 
   useEffect(() => {
-    const storedUrl = sessionStorage.getItem('runTestURL');
-    const shouldRun = sessionStorage.getItem('shouldRunTest');
+    const storedUrl = sessionStorage.getItem("runTestURL");
+    const shouldRun = sessionStorage.getItem("shouldRunTest");
 
-    if (shouldRun === 'true' && storedUrl) {
+    if (shouldRun === "true" && storedUrl) {
       setUrl(storedUrl);
-      sessionStorage.setItem('shouldRunTest', 'false');
+      sessionStorage.setItem("shouldRunTest", "false");
       setTimeout(() => {
         runClickjackingTest(storedUrl);
       }, 1000);
@@ -43,7 +43,7 @@ export default function App() {
   const startTimer = () => {
     setElapsedTime(0);
     timerRef.current = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
+      setElapsedTime((prev) => prev + 1);
     }, 1000);
   };
 
@@ -55,8 +55,8 @@ export default function App() {
   };
 
   const checkURL = () => {
-    sessionStorage.setItem('runTestURL', url);
-    sessionStorage.setItem('shouldRunTest', 'true');
+    sessionStorage.setItem("runTestURL", url);
+    sessionStorage.setItem("shouldRunTest", "true");
     window.location.reload();
   };
 
@@ -69,29 +69,31 @@ export default function App() {
 
     setTestResults({
       isVisible: false,
-      siteUrl: '-',
-      testTime: '-',
-      missingHeaders: '-',
+      siteUrl: "-",
+      testTime: "-",
+      missingHeaders: "-",
       isVulnerable: null,
-      reason: '',
-      rawHeaders: ''
+      reason: "",
+      rawHeaders: "",
     });
 
     try {
-      const res = await axios.post('/.netlify/functions/checkHeaders', { url: targetUrl });
+      const res = await axios.post("/.netlify/functions/checkHeaders", {
+        url: targetUrl,
+      });
       const headers = res.data.headers || {};
-      const ipAddr = res.data.ip || '-';
+      const ipAddr = res.data.ip || "-";
       setIP(ipAddr);
 
-      const xfo = headers['x-frame-options'];
-      const csp = headers['content-security-policy'];
+      const xfo = headers["x-frame-options"];
+      const csp = headers["content-security-policy"];
 
       const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
       const hasCSP = csp && /frame-ancestors/i.test(csp);
 
       const missingHeaders = [];
-      if (!hasXFO) missingHeaders.push('X-Frame-Options');
-      if (!hasCSP) missingHeaders.push('CSP frame-ancestors');
+      if (!hasXFO) missingHeaders.push("X-Frame-Options");
+      if (!hasCSP) missingHeaders.push("CSP frame-ancestors");
 
       let iframeLoaded = false;
 
@@ -108,29 +110,34 @@ export default function App() {
         iframe.src = targetUrl;
       });
 
-      const timeoutPromise = new Promise(resolve => setTimeout(resolve, 10000));
+      const timeoutPromise = new Promise((resolve) =>
+        setTimeout(resolve, 10000)
+      );
       await Promise.race([loadPromise, timeoutPromise]);
 
-      if (iframeLoaded) await new Promise(res => setTimeout(res, 1000));
+      if (iframeLoaded) await new Promise((res) => setTimeout(res, 1000));
 
       let vulnerable = false;
-      let reason = '';
+      let reason = "";
 
       if (!iframeLoaded) {
         vulnerable = false;
         reason = missingHeaders.length
-          ? 'Page refused to render in iframe, even though headers are missing. Possibly protected by other mechanisms.'
-          : 'Page refused to render in iframe, protected.';
+          ? "Page refused to render in iframe, even though headers are missing. Possibly protected by other mechanisms."
+          : "Page refused to render in iframe, protected.";
       } else {
         if (!hasXFO) {
           vulnerable = true;
-          reason = 'Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.';
+          reason =
+            "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
         } else if (!hasCSP) {
           vulnerable = false;
-          reason = 'Page loaded in iframe but has X-Frame-Options. Missing CSP frame-ancestors.';
+          reason =
+            "Page loaded in iframe but has X-Frame-Options. Missing CSP frame-ancestors.";
         } else {
           vulnerable = false;
-          reason = 'Page loaded in iframe but has both headers. Should be safe.';
+          reason =
+            "Page loaded in iframe but has both headers. Should be safe.";
         }
       }
 
@@ -138,23 +145,25 @@ export default function App() {
         isVisible: true,
         siteUrl: targetUrl,
         testTime: new Date().toUTCString(),
-        missingHeaders: missingHeaders.length ? missingHeaders.join(', ') : 'None - Site is protected',
+        missingHeaders: missingHeaders.length
+          ? missingHeaders.join(", ")
+          : "None - Site is protected",
         isVulnerable: vulnerable,
         reason,
-        rawHeaders: JSON.stringify(headers, null, 2)
+        rawHeaders: JSON.stringify(headers, null, 2),
       });
 
       setResult(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || 'Request failed');
+      setError(err.response?.data?.error || "Request failed");
       setTestResults({
         isVisible: true,
         siteUrl: targetUrl,
         testTime: new Date().toUTCString(),
-        missingHeaders: 'Error fetching headers',
+        missingHeaders: "Error fetching headers",
         isVulnerable: null,
-        reason: 'Error fetching headers',
-        rawHeaders: ''
+        reason: "Error fetching headers",
+        rawHeaders: "",
       });
     } finally {
       stopTimer();
@@ -167,8 +176,8 @@ export default function App() {
     const img = new Image();
     img.src = watermark;
 
-    doc.setFillColor('#4d0c26');
-    doc.rect(0, 0, 210, 297, 'F');
+    doc.setFillColor("#4d0c26");
+    doc.rect(0, 0, 210, 297, "F");
 
     const goldenRGB = [243, 205, 162];
     doc.setTextColor(...goldenRGB);
@@ -178,134 +187,204 @@ export default function App() {
     doc.text(`IP Address: ${ip}`, 15, 45);
     doc.text(`Test Time: ${testResults.testTime}`, 15, 55);
     doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
-    doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
-
+    doc.text(
+      "Vulnerability Status: " +
+        (testResults.isVulnerable ? "VULNERABLE" : "Not Vulnerable"),
+      15,
+      75
+    );
 
     //changes by w0lf
-// Header: Confidential + Title with golden line
-doc.setTextColor(...goldenRGB);
-doc.setFont('courier', 'bold');
-doc.setFontSize(10);
-doc.text('Confidential', 195, 10, { align: 'right' });
+    // Header: Confidential + Title with golden line
+    doc.setTextColor(...goldenRGB);
+    doc.setFont("courier", "bold");
+    doc.setFontSize(10);
+    doc.text("Confidential", 195, 10, { align: "right" });
 
-// Golden horizontal line below "Confidential"
-doc.setDrawColor(...goldenRGB);
-doc.setLineWidth(0.5);
-doc.line(15, 14, 195, 14); // from left to right edge
+    // Golden horizontal line below "Confidential"
+    doc.setDrawColor(...goldenRGB);
+    doc.setLineWidth(0.5);
+    doc.line(15, 14, 195, 14); // from left to right edge
 
-// Title below the line with some spacing
-doc.setFontSize(22);
-doc.setFont('helvetica', 'bold');
-doc.text('Quasar CyberTech – Clickjacking Report', 15, 26); // add line spacing here
+    // Title below the line with some spacing
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("Quasar CyberTech – Clickjacking Report", 15, 26); // add line spacing here
 
-// -----------------
-// Raw Headers Section
-// -----------------
-const rawHeadersStartY = 85;
-const headerBoxWidth = 180;
-const headerBoxX = 15;
-const borderRadius = 3;
+    // -----------------
+    // Raw Headers Section
+    // -----------------
+    const rawHeadersStartY = 85;
+    const headerBoxWidth = 180;
+    const headerBoxX = 15;
+    const borderRadius = 3;
 
-doc.setFont('courier', 'normal');
-doc.setFontSize(10);
-const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', headerBoxWidth - 8);
-const lineHeight = 4.5;
-const headerBoxHeight = headerLines.length * lineHeight + 8;
+    doc.setFont("courier", "normal");
+    doc.setFontSize(10);
+    const headerLines = doc.splitTextToSize(
+      testResults.rawHeaders || "",
+      headerBoxWidth - 8
+    );
+    const lineHeight = 4.5;
+    const headerBoxHeight = headerLines.length * lineHeight + 8;
 
-let headerBoxY = rawHeadersStartY + 5;
-const pageHeight = 297;
-const bottomMargin = 25;
-const availableHeight = pageHeight - bottomMargin;
+    let headerBoxY = rawHeadersStartY + 5;
+    const pageHeight = 297;
+    const bottomMargin = 25;
+    const availableHeight = pageHeight - bottomMargin;
 
-// Check if the box will overflow
-if ((headerBoxY + headerBoxHeight) > availableHeight) {
-    doc.addPage();
-    headerBoxY = 20; // Reset position on new page
-}
+    // Check if the box will overflow
+    if (headerBoxY + headerBoxHeight > availableHeight) {
+      doc.addPage();
+      headerBoxY = 20; // Reset position on new page
+    }
 
-// Draw the maroon box with golden border
-doc.setFillColor(109, 28, 49);
-doc.setDrawColor(...goldenRGB);
-doc.roundedRect(headerBoxX, headerBoxY, headerBoxWidth, headerBoxHeight, borderRadius, borderRadius, 'FD');
+    // Draw the maroon box with golden border
+    doc.setFillColor(109, 28, 49);
+    doc.setDrawColor(...goldenRGB);
+    doc.roundedRect(
+      headerBoxX,
+      headerBoxY,
+      headerBoxWidth,
+      headerBoxHeight,
+      borderRadius,
+      borderRadius,
+      "FD"
+    );
 
-// Draw section title above the box
-doc.setTextColor(...goldenRGB);
-doc.setFont('courier', 'bold');
-doc.setFontSize(12);
-doc.text('Raw Headers:', headerBoxX, headerBoxY - 6); // position above the container
+    // Draw section title above the box
+    doc.setTextColor(...goldenRGB);
+    doc.setFont("courier", "bold");
+    doc.setFontSize(12);
+    doc.text("Raw Headers:", headerBoxX, headerBoxY - 6); // position above the container
 
-// Draw the header content
-doc.setFont('courier', 'normal');
-doc.setFontSize(10);
-doc.setTextColor(...goldenRGB);
-doc.text(headerLines, headerBoxX + 4, headerBoxY + 6); // slightly padded inside the box
-//changes by w0lf
+    // Draw the header content
+    doc.setFont("courier", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...goldenRGB);
+    doc.text(headerLines, headerBoxX + 4, headerBoxY + 6); // slightly padded inside the box
+    //changes by w0lf
 
     const watermarkWidth = 25;
     const watermarkHeight = 18;
     const centerX = (210 - watermarkWidth) / 2;
     const bottomY = 250;
-    doc.addImage(img, 'PNG', centerX, bottomY, watermarkWidth, watermarkHeight);
+    doc.addImage(img, "PNG", centerX, bottomY, watermarkWidth, watermarkHeight);
 
-    doc.setFont('times', 'normal');
+    doc.setFont("times", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...goldenRGB);
     const disclaimer = `This report and the information contained herein are the proprietary property of Quasar CyberTech and are intended solely for the internal use of the designated client. This document may contain confidential or sensitive information and is shared with the client for review and informational purposes only. It may not be reproduced, distributed, or disclosed to any third party, in whole or in part, without the prior written consent of Quasar CyberTech. All rights reserved © ${new Date().getFullYear()}.`;
     const disclaimerLines = doc.splitTextToSize(disclaimer, 180);
     doc.text(disclaimerLines, 15, 295 - disclaimerLines.length * 4);
 
-    doc.save('clickjacking_report.pdf');
+    doc.save("clickjacking_report.pdf");
   };
-  
+
   return (
     <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative">
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
-        <a href="/about.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">About</a>
-        <a href="/defensecj.html" target="_blank" rel="noopener noreferrer" className="hover:underline text-yellow-300">Mitigation Guide</a>
+        <a
+          href="/about.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline text-yellow-300"
+        >
+          About
+        </a>
+        <a
+          href="/defensecj.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline text-yellow-300"
+        >
+          Mitigation Guide
+        </a>
       </div>
 
-      <div className="flex h-full">
-        <div className="w-1/2 flex items-center justify-center p-4">
-          <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-full h-[90%] bg-white">
-            <iframe ref={testFrameRef} className="w-full h-full opacity-40" title="Test Frame" />
+      <div className="flex h-full flex-col md:flex-row">
+        <div className="md:w-1/2 w-full flex items-center justify-center p-4 h-1/2 md:h-full">
+          <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-full h-full bg-white">
+            <iframe
+              ref={testFrameRef}
+              className="w-full h-full opacity-40"
+              title="Test Frame"
+            />
             {showPoC && (
-              <div className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => alert('Fake button clicked (would click iframe content)')}>
+              <div
+                className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer"
+                onClick={() =>
+                  alert("Fake button clicked (would click iframe content)")
+                }
+              >
                 Click Me
               </div>
             )}
           </div>
         </div>
 
-        <div className="w-1/2 flex flex-col items-center justify-center px-6 overflow-hidden">
+        <div className="md:w-1/2 w-full flex flex-col items-center justify-center px-6 py-4 md:py-0 overflow-y-auto max-h-[50%] md:max-h-full">
           <div className="text-center max-w-xl w-full">
-            <img src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png" alt="Logo" className="w-36 mx-auto mb-4" />
+            <img
+              src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
+              alt="Logo"
+              className="w-36 mx-auto mb-4"
+            />
             <h1 className="text-3xl font-bold mb-6">Clickjacking Test</h1>
 
-            <div className="flex mb-4">
+            <div className="flex flex-col sm:flex-row mb-4">
               <input
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="Enter website URL"
-                className="flex-grow p-2 rounded-l text-black border"
+                className="p-2 rounded-t sm:rounded-l sm:rounded-tr-none sm:rounded-br-none text-black border"
               />
-              <button onClick={checkURL} className="bg-blue-500 hover:bg-blue-700 text-white px-4 rounded-r">Test</button>
+              <button
+                onClick={checkURL}
+                className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 sm:py-0 sm:rounded-r sm:rounded-t-none"
+              >
+                Test
+              </button>
             </div>
 
-            {loading && <div className="text-yellow-300 animate-pulse mb-2">Running test...</div>}
-            {loading && <div className="text-yellow-400 text-xs mb-2">Elapsed Time: {elapsedTime} second{elapsedTime !== 1 ? 's' : ''}</div>}
+            {loading && (
+              <>
+                <div className="text-yellow-300 animate-pulse mb-2">
+                  Running test...
+                </div>
+                <div className="text-yellow-400 text-xs mb-2">
+                  Elapsed Time: {elapsedTime} second{elapsedTime !== 1 ? "s" : ""}
+                </div>
+              </>
+            )}
 
             {testResults.isVisible && (
               <>
                 <div className="bg-red-100 text-black p-4 rounded text-sm mb-2 text-left">
-                  <p><strong>Site:</strong> {testResults.siteUrl}</p>
-                  <p><strong>IP Address:</strong> {ip}</p>
-                  <p><strong>Time:</strong> {testResults.testTime}</p>
-                  <p><strong>Missing Headers:</strong> <span className="text-red-600 font-bold">{testResults.missingHeaders}</span></p>
+                  <p>
+                    <strong>Site:</strong> {testResults.siteUrl}
+                  </p>
+                  <p>
+                    <strong>IP Address:</strong> {ip}
+                  </p>
+                  <p>
+                    <strong>Time:</strong> {testResults.testTime}
+                  </p>
+                  <p>
+                    <strong>Missing Headers:</strong>{" "}
+                    <span className="text-red-600 font-bold">
+                      {testResults.missingHeaders}
+                    </span>
+                  </p>
                 </div>
 
-                <div className={`p-3 text-center font-bold text-white rounded mb-2 ${testResults.isVulnerable ? 'bg-red-600' : 'bg-green-600'}`}>
-                  Site is {testResults.isVulnerable ? 'vulnerable' : 'not vulnerable'} to Clickjacking
+                <div
+                  className={`p-3 text-center font-bold text-white rounded mb-2 ${
+                    testResults.isVulnerable ? "bg-red-600" : "bg-green-600"
+                  }`}
+                >
+                  Site is {testResults.isVulnerable ? "vulnerable" : "not vulnerable"} to Clickjacking
                 </div>
 
                 {testResults.rawHeaders && (
@@ -315,12 +394,25 @@ doc.text(headerLines, headerBoxX + 4, headerBoxY + 6); // slightly padded inside
                   </div>
                 )}
 
-                <div className="flex justify-between items-center text-xs mt-2">
-                  <label htmlFor="poc-toggle" className="flex items-center gap-2 cursor-pointer">
-                    <input id="poc-toggle" type="checkbox" checked={showPoC} onChange={() => setShowPoC(!showPoC)} />
+                <div className="flex flex-col sm:flex-row justify-between items-center text-xs mt-2 gap-2">
+                  <label
+                    htmlFor="poc-toggle"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      id="poc-toggle"
+                      type="checkbox"
+                      checked={showPoC}
+                      onChange={() => setShowPoC(!showPoC)}
+                    />
                     <span>Enable PoC</span>
                   </label>
-                  <button onClick={exportPDF} className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded">Export PDF</button>
+                  <button
+                    onClick={exportPDF}
+                    className="bg-yellow-400 hover:bg-yellow-600 text-black px-3 py-1 rounded"
+                  >
+                    Export PDF
+                  </button>
                 </div>
               </>
             )}
