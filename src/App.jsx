@@ -173,99 +173,55 @@ export default function App() {
 
   const exportPDF = async () => {
     const doc = new jsPDF();
-    const img = new Image();
-    img.src = watermark;
   
-    // Background color (maroon)
+    // Set background color (maroon)
     doc.setFillColor("#4d0c26");
     doc.rect(0, 0, 210, 297, "F");
   
+    // Set text color (golden)
     const goldenRGB = [243, 205, 162];
     doc.setTextColor(...goldenRGB);
   
-    // Confidential Header
-    doc.setFont("courier", "bold");
+    // Confidential label at top-right
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text("Confidential", 195, 10, { align: "right" });
   
-    // Horizontal golden line
+    // Horizontal line
     doc.setDrawColor(...goldenRGB);
     doc.setLineWidth(0.5);
     doc.line(15, 14, 195, 14);
   
-    // Report Title
+    // Title
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
     doc.text("Quasar CyberTech – Clickjacking Report", 15, 26);
   
-    // Test Results
-    doc.setFontSize(12);
+    // Test Result Data
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
     doc.text(`Site Tested: ${testResults.siteUrl}`, 15, 35);
     doc.text(`IP Address: ${ip}`, 15, 45);
     doc.text(`Test Time: ${testResults.testTime}`, 15, 55);
+    doc.text(`Missing Headers: ${testResults.missingHeaders || "None"}`, 15, 65);
     doc.text(
-      `Missing Headers: ${testResults.missingHeaders || "None"}`,
-      15,
-      65
-    );
-    doc.text(
-      "Vulnerability Status: " +
-        (testResults.isVulnerable ? "VULNERABLE" : "Not Vulnerable"),
+      `Vulnerability Status: ${testResults.isVulnerable ? "VULNERABLE" : "Not Vulnerable"}`,
       15,
       75
     );
   
-    // Mitigation Box
-    const boxX = 15;
-    const boxY = 90;
-    const boxWidth = 180;
-    const boxHeight = 80;
-    const borderRadius = 3;
-  
-    doc.setFillColor(109, 28, 49);
-    doc.setDrawColor(...goldenRGB);
-    doc.roundedRect(boxX, boxY, boxWidth, boxHeight, borderRadius, borderRadius, "FD");
-  
-    // Mitigation Title
-    doc.setFont("courier", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(...goldenRGB);
-    doc.text("🔒 Clickjacking Mitigation Guide", boxX + 4, boxY + 10);
-  
-    // Mitigation Content
-    const mitigationLines = [
-      "• Use X-Frame-Options header: DENY or SAMEORIGIN",
-      "• Prefer Content-Security-Policy with frame-ancestors",
-      "    → 'none' to block all, 'self' for same-origin, or specific domains",
-      "• Avoid relying on a single header—use both for compatibility",
-      "• Implement frame-busting script (for legacy browsers):",
-      "    if (self !== top) top.location = self.location;",
-    ];
-    doc.setFont("courier", "normal");
-    doc.setFontSize(10);
-    doc.text(mitigationLines, boxX + 6, boxY + 20);
-  
     // Clickable Link to Full Guide
-    doc.setTextColor(0, 153, 255); // blue color for link
-    doc.setFont("courier", "bold");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(0, 153, 255);
     doc.textWithLink(
       "Full guide: https://quasarclickjack.netlify.app/defensecj.html",
-      boxX + 6,
-      boxY + 20 + mitigationLines.length * 5,
-      {
-        url: "https://quasarclickjack.netlify.app/defensecj.html",
-      }
+      15,
+      90,
+      { url: "https://quasarclickjack.netlify.app/defensecj.html" }
     );
   
-    // Watermark at bottom center
-    const watermarkWidth = 25;
-    const watermarkHeight = 18;
-    const centerX = (210 - watermarkWidth) / 2;
-    const bottomY = 250;
-    doc.addImage(img, "PNG", centerX, bottomY, watermarkWidth, watermarkHeight);
-  
-    // Disclaimer
+    // Disclaimer at bottom
     doc.setFont("times", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...goldenRGB);
@@ -275,6 +231,7 @@ export default function App() {
   
     doc.save("clickjacking_report.pdf");
   };
+  
   
 
   return (
