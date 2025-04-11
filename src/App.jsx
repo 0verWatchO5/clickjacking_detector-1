@@ -174,11 +174,11 @@ export default function App() {
     doc.setTextColor(...goldenRGB);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(11);
     doc.text('Confidential', 195, 10, { align: 'right' });
 
     doc.setFontSize(22);
-    doc.text('Quasar CyberTech – Clickjacking Report', 15, 20);
+    doc.text('Quasar CyberTech – Clickjacking Report', 15, 21);
 
     doc.setFontSize(12);
     doc.text(`Site Tested: ${testResults.siteUrl}`, 15, 35);
