@@ -187,11 +187,7 @@ export default function App() {
     doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
     doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
 
-    const reasonLines = doc.splitTextToSize(testResults.reason || '', 180);
-    doc.text('Analysis:', 15, 85);
-    doc.text(reasonLines, 15, 93);
-
-    const rawHeadersStartY = 100 + reasonLines.length * 6;
+    const rawHeadersStartY = 85;
     const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', 180);
     doc.text('Raw Headers:', 15, rawHeadersStartY);
     doc.text(headerLines, 15, rawHeadersStartY + 8);
@@ -211,7 +207,7 @@ export default function App() {
 
     doc.save('clickjacking_report.pdf');
   };
-
+  
   return (
     <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative">
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
