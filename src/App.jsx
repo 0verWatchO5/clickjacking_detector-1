@@ -14,7 +14,6 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [iframeStatus, setIframeStatus] = useState("");
 
   const [testResults, setTestResults] = useState({
     isVisible: false,
@@ -73,7 +72,7 @@ export default function App() {
     if (!hasXFO) missing.push("X-Frame-Options");
     if (!hasCSP) missing.push("CSP frame-ancestors");
 
-    return { hasXFO, hasCSP, missing };
+    return { hasXFO, hasCSP, missing, xfo, csp };
   };
 
   const checkIframeBehavior = async (targetUrl) => {
@@ -82,45 +81,40 @@ export default function App() {
       if (!iframe) return resolve({ loaded: false, reason: "Iframe reference not found" });
 
       setIframeLoading(true);
-      setIframeStatus("");
 
       const timeout = setTimeout(() => {
         setIframeLoading(false);
-        setIframeStatus("Iframe load timed out (possible CSP block or network error)");
         resolve({ loaded: false, reason: "Timeout" });
-      }, 15000);
+      }, 20000);
 
       iframe.onload = () => {
         clearTimeout(timeout);
+        setTimeout(() => {
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            const html = iframeDoc.documentElement.innerHTML;
 
-        try {
-          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-          const html = iframeDoc.documentElement.innerHTML;
+            const hasFrameBustingStyle = html.includes("html { display: none;");
+            const hasFrameBustingScript = html.includes("top.location") && html.includes("self === top");
 
-          const hasStyle = html.includes("html { display: none;");
-          const hasScript = html.includes("top.location") && html.includes("self === top");
+            if (hasFrameBustingStyle && hasFrameBustingScript) {
+              setIframeLoading(false);
+              resolve({ loaded: false, reason: "Frame-busting JS" });
+              return;
+            }
 
-          if (hasStyle && hasScript) {
-            setIframeStatus("Frame-busting JS detected (script hides page in iframe)");
             setIframeLoading(false);
-            resolve({ loaded: false, reason: "Frame-busting JS" });
-            return;
+            resolve({ loaded: true, reason: "Success" });
+          } catch (err) {
+            setIframeLoading(false);
+            resolve({ loaded: false, reason: "Cross-origin block" });
           }
-
-          setIframeStatus("Iframe loaded successfully");
-          setIframeLoading(false);
-          resolve({ loaded: true, reason: "Success" });
-        } catch (err) {
-          setIframeStatus("Blocked by browser or cross-origin policy");
-          setIframeLoading(false);
-          resolve({ loaded: false, reason: "Cross-origin block" });
-        }
+        }, 15000);
       };
 
       iframe.onerror = () => {
         clearTimeout(timeout);
         setIframeLoading(false);
-        setIframeStatus("Iframe failed to load (refused or blocked)");
         resolve({ loaded: false, reason: "Iframe error" });
       };
 
@@ -151,10 +145,11 @@ export default function App() {
       const ipAddr = res.data.ip || "-";
       setIP(ipAddr);
 
-      const headerAnalysis = checkMissingSecurityHeaders(headers);
+      const analysis = checkMissingSecurityHeaders(headers);
       const iframeResult = await checkIframeBehavior(targetUrl);
       const iframeLoaded = iframeResult.loaded;
-      const csp = headers["content-security-policy"] || "";
+      const csp = analysis.csp || "";
+      const xfo = analysis.xfo || "";
       const ourOrigin = "https://quasarclickjack.netlify.app/";
 
       let vulnerable = false;
@@ -162,26 +157,35 @@ export default function App() {
 
       if (!iframeLoaded) {
         vulnerable = false;
-        reason = `Page did not render in iframe. Reason: ${iframeStatus}`;
+        reason = `Iframe did not load: ${iframeResult.reason}`;
       } else if (csp.includes("frame-ancestors") && !csp.includes(ourOrigin)) {
-        vulnerable = true;
-        reason = `Iframe loaded but 'quasarclickjack.netlify.app' is not whitelisted in CSP frame-ancestors. Vulnerable.`;
-      } else if (!headerAnalysis.hasXFO) {
-        vulnerable = true;
-        reason = `Iframe loaded and missing X-Frame-Options. Vulnerable.`;
-      } else if (!headerAnalysis.hasCSP) {
-        vulnerable = true;
-        reason = `Iframe loaded and CSP frame-ancestors is missing. Vulnerable.`;
-      } else {
         vulnerable = false;
-        reason = `Iframe loaded and headers present. Site appears protected.`;
+        reason = `CSP is present and does not include our origin.`;
+      } else if (csp.includes("frame-ancestors 'self'") || csp.includes("frame-ancestors 'none'")) {
+        vulnerable = false;
+        reason = `CSP frame-ancestors set to 'self' or 'none'. Not embeddable.`;
+      } else if (!analysis.hasXFO && !analysis.hasCSP) {
+        vulnerable = true;
+        reason = `No protective headers and iframe loaded.`;
+      } else if (!analysis.hasXFO && iframeLoaded) {
+        vulnerable = true;
+        reason = `X-Frame-Options missing and iframe loaded.`;
+      } else if (!analysis.hasCSP && analysis.hasXFO && iframeLoaded) {
+        vulnerable = false;
+        reason = `CSP is missing, but X-Frame-Options is present.`;
+      } else if (analysis.hasCSP && !analysis.hasXFO && iframeLoaded) {
+        vulnerable = true;
+        reason = `CSP present, but X-Frame-Options missing and iframe loaded.`;
+      } else {
+        vulnerable = true;
+        reason = `Iframe loaded despite headers — site is vulnerable.`;
       }
 
       setTestResults({
         isVisible: true,
         siteUrl: targetUrl,
         testTime: new Date().toUTCString(),
-        missingHeaders: headerAnalysis.missing.length ? headerAnalysis.missing.join(", ") : "None",
+        missingHeaders: analysis.missing.length ? analysis.missing.join(", ") : "None",
         isVulnerable: vulnerable,
         reason,
         rawHeaders: JSON.stringify(headers, null, 2),
@@ -204,6 +208,8 @@ export default function App() {
       setLoading(false);
     }
   };
+}
+
 
   const exportPDF = async () => {
     const doc = new jsPDF();
@@ -284,49 +290,32 @@ export default function App() {
         </button>
       </div>
 
-      {/* Left Panel: Iframe */}
-      <div className="w-1/2 flex items-center justify-center p-4">
-        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-[90%] h-[600px] bg-white">
-          <iframe
-            ref={testFrameRef}
-            className="w-full h-full opacity-40"
-            title="Test Frame"
-          />
-          {iframeLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
-              <div className="text-black font-bold animate-pulse">
-                Loading site in iframe...
-              </div>
+          {/* Left Panel: Iframe */}
+    <div className="w-1/2 flex flex-col items-center justify-center p-4">
+      <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-[90%] h-[600px] bg-white">
+        <iframe
+          ref={testFrameRef}
+          className="w-full h-full opacity-40"
+          title="Test Frame"
+        />
+        {iframeLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
+            <div className="text-black font-bold animate-pulse">
+              Loading site in iframe...
             </div>
-          )}
-          {showPoC && (
-            <div
-              className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer"
-              onClick={() => alert("Fake button clicked (would click iframe content)")}
-            >
-              Click Me
-            </div>
-          )}
-        </div>
-        {iframeStatus && (
+          </div>
+        )}
+        {showPoC && (
           <div
-            style={{
-              marginTop: '10px',
-              backgroundColor: '#4d0c26',
-              color: '#f3cda2',
-              padding: '8px',
-              borderRadius: '8px',
-              fontSize: '0.9rem',
-              textAlign: 'center',
-              width: '90%',
-              maxWidth: '95%',
-              boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)',
-            }}
+            className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer"
+            onClick={() => alert("Fake button clicked (would click iframe content)")}
           >
-            Iframe Error: {iframeStatus}
+            Click Me
           </div>
         )}
       </div>
+    </div>
+
 
       {/* Right Panel: Controls and Results */}
       <div className="w-1/2 flex flex-col items-center justify-center px-6 overflow-auto max-h-screen">
@@ -385,6 +374,10 @@ export default function App() {
                 Site is {testResults.isVulnerable ? "vulnerable" : "not vulnerable"} to Clickjacking
               </div>
 
+              <div className="bg-yellow-100 text-black text-sm p-3 rounded mb-2">
+                <strong>Reason:</strong> {testResults.reason}
+              </div>
+
               {testResults.rawHeaders && (
                 <div className="bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-40 font-mono mb-2 text-left">
                   <strong className="text-lime-400">Raw Headers:</strong>
@@ -422,4 +415,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+
