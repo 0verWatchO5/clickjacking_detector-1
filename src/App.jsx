@@ -195,7 +195,7 @@ export default function App() {
 
     // Title
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
+    doc.setFontSize(24);
     doc.text("Quasar CyberTech – Clickjacking Report", 15, 26);
 
     // Section: Basic Info
@@ -239,9 +239,9 @@ export default function App() {
     ];
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.setTextColor(...goldenRGB);
-    doc.text("Clickjacking Mitigation Guide", boxX + 2, boxY + 5, 10);
+    doc.text("Clickjacking Mitigation Guide", boxX + 2, boxY + 8);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
