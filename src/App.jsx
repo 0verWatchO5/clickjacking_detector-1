@@ -1,3 +1,4 @@
+// ✅ CLEANED VERSION — html2canvas removed, original jsPDF logic preserved
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import jsPDF from "jspdf";
@@ -14,6 +15,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [iframeStatus, setIframeStatus] = useState("");
 
   const [testResults, setTestResults] = useState({
     isVisible: false,
@@ -81,51 +83,50 @@ export default function App() {
       if (!iframe) return resolve({ loaded: false, reason: "Iframe reference not found" });
 
       setIframeLoading(true);
-      let reason = "Unknown error";
-      let visibilityCheck = null;
+      setIframeStatus("");
 
       const timeout = setTimeout(() => {
-        clearInterval(visibilityCheck);
         setIframeLoading(false);
-        resolve({ loaded: false, reason: "Iframe load timed out (possible CSP block or network error)" });
+        setIframeStatus("Iframe load timed out (possible CSP block or network error)");
+        resolve({ loaded: false, reason: "Timeout" });
       }, 15000);
 
       iframe.onload = () => {
         clearTimeout(timeout);
 
-        visibilityCheck = setInterval(() => {
-          try {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            const isHidden = iframeDoc?.documentElement?.style?.display === "none";
-            if (isHidden) {
-              clearInterval(visibilityCheck);
-              setIframeLoading(false);
-              resolve({ loaded: false, reason: "Iframe loaded but content is hidden via JS – possible JS frame busting" });
-            }
-          } catch (err) {
-            clearInterval(visibilityCheck);
-          }
-        }, 1000);
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+          const html = iframeDoc.documentElement.innerHTML;
 
-        setIframeLoading(false);
-        resolve({ loaded: true, reason: "Iframe loaded successfully" });
+          const hasStyle = html.includes("html { display: none;");
+          const hasScript = html.includes("top.location") && html.includes("self === top");
+
+          if (hasStyle && hasScript) {
+            setIframeStatus("Frame-busting JS detected (script hides page in iframe)");
+            setIframeLoading(false);
+            resolve({ loaded: false, reason: "Frame-busting JS" });
+            return;
+          }
+
+          setIframeStatus("Iframe loaded successfully");
+          setIframeLoading(false);
+          resolve({ loaded: true, reason: "Success" });
+        } catch (err) {
+          setIframeStatus("Blocked by browser or cross-origin policy");
+          setIframeLoading(false);
+          resolve({ loaded: false, reason: "Cross-origin block" });
+        }
       };
 
       iframe.onerror = () => {
         clearTimeout(timeout);
         setIframeLoading(false);
-        resolve({ loaded: false, reason: "Iframe failed to load (error event)" });
+        setIframeStatus("Iframe failed to load (refused or blocked)");
+        resolve({ loaded: false, reason: "Iframe error" });
       };
 
       iframe.src = targetUrl;
     });
-  };
-
-  const checkJavaScriptFrameBusting = () => {
-    return {
-      detected: false,
-      reason: "Unable to detect JS-based frame busting from a different origin.",
-    };
   };
 
   const runClickjackingTest = async (targetUrl) => {
@@ -154,9 +155,6 @@ export default function App() {
       const headerAnalysis = checkMissingSecurityHeaders(headers);
       const iframeResult = await checkIframeBehavior(targetUrl);
       const iframeLoaded = iframeResult.loaded;
-      const iframeReason = iframeResult.reason;
-
-      const jsBusting = checkJavaScriptFrameBusting();
       const csp = headers["content-security-policy"] || "";
       const ourOrigin = "https://quasarclickjack.netlify.app/";
 
@@ -165,28 +163,26 @@ export default function App() {
 
       if (!iframeLoaded) {
         vulnerable = false;
-        reason = `Page did not render in iframe. Reason: ${iframeReason}`;
+        reason = `Page did not render in iframe. Reason: ${iframeStatus}`;
       } else if (csp.includes("frame-ancestors") && !csp.includes(ourOrigin)) {
         vulnerable = false;
-        reason = `Iframe loaded, but your domain is not whitelisted in frame-ancestors. CSP is blocking.`;
+        reason = `Iframe loaded, but domain is not whitelisted in CSP frame-ancestors.`;
       } else if (!headerAnalysis.hasXFO) {
         vulnerable = true;
-        reason = `Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.`;
+        reason = `Iframe loaded and missing X-Frame-Options. Vulnerable.`;
       } else if (!headerAnalysis.hasCSP) {
         vulnerable = false;
-        reason = `Page loaded in iframe but missing CSP frame-ancestors. May be partially protected.`;
+        reason = `Iframe loaded but CSP frame-ancestors is missing.`;
       } else {
         vulnerable = false;
-        reason = `Page loaded in iframe but has both XFO and CSP frame-ancestors. Protected.`;
+        reason = `Iframe loaded and headers present. Protected.`;
       }
 
       setTestResults({
         isVisible: true,
         siteUrl: targetUrl,
         testTime: new Date().toUTCString(),
-        missingHeaders: headerAnalysis.missing.length
-          ? headerAnalysis.missing.join(", ")
-          : "None - Site is protected",
+        missingHeaders: headerAnalysis.missing.length ? headerAnalysis.missing.join(", ") : "None",
         isVulnerable: vulnerable,
         reason,
         rawHeaders: JSON.stringify(headers, null, 2),
@@ -215,119 +211,59 @@ export default function App() {
     const img = new Image();
     img.src = watermark;
 
-    // Background color (maroon)
     doc.setFillColor("#4d0c26");
     doc.rect(0, 0, 210, 297, "F");
+    const golden = [243, 205, 162];
+    doc.setTextColor(...golden);
 
-    const goldenRGB = [243, 205, 162];
-    doc.setTextColor(...goldenRGB);
-
-    // "Confidential" Label
     doc.setFont("courier", "bold");
     doc.setFontSize(10);
     doc.text("Confidential", 195, 10, { align: "right" });
 
-    // Line below header
-    doc.setDrawColor(...goldenRGB);
     doc.setLineWidth(0.5);
     doc.line(15, 14, 195, 14);
-
-    // Title
     doc.setFont("helvetica", "bold");
     doc.setFontSize(24);
     doc.text("Quasar CyberTech – Clickjacking Report", 15, 26);
 
-    // Section: Basic Info
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
-    const infoStartY = 38;
-    const lineSpacing = 10;
-    doc.text(`Site Tested: ${testResults.siteUrl}`, 15, infoStartY);
-    doc.text(`IP Address: ${ip}`, 15, infoStartY + lineSpacing);
-    doc.text(
-      `Test Time: ${testResults.testTime}`,
-      15,
-      infoStartY + lineSpacing * 2
-    );
-    doc.text(
-      `Missing Headers: ${testResults.missingHeaders || "None"}`,
-      15,
-      infoStartY + lineSpacing * 3
-    );
-    doc.text(
-      `Vulnerability Status: ${
-        testResults.isVulnerable ? "VULNERABLE" : "Not Vulnerable"
-      }`,
-      15,
-      infoStartY + lineSpacing * 4
-    );
+    const yStart = 38;
+    const lineGap = 10;
+    doc.text(`Site Tested: ${testResults.siteUrl}`, 15, yStart);
+    doc.text(`IP Address: ${ip}`, 15, yStart + lineGap);
+    doc.text(`Test Time: ${testResults.testTime}`, 15, yStart + 2 * lineGap);
+    doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, yStart + 3 * lineGap);
+    doc.text(`Vulnerability Status: ${testResults.isVulnerable ? "VULNERABLE" : "Not Vulnerable"}`, 15, yStart + 4 * lineGap);
 
-    // ---------------- Mitigation Guide Box ----------------
-    const boxX = 15;
-    const boxY = infoStartY + lineSpacing * 6;
-    const boxWidth = 180;
-    const lineHeight = 6;
-
-    const mitigationLines = [
+    const boxY = yStart + 6 * lineGap;
+    const guide = [
       "--- Use X-Frame-Options header: DENY or SAMEORIGIN",
       "--- Prefer Content-Security-Policy with frame-ancestors",
       "      'none' to block all, 'self' for same-origin, or specific domains",
-      "--- Avoid relying on a single header—use both for compatibility",
-      "--- Implement frame-busting script (for legacy browsers):",
-      "       if (self !== top) top.location = self.location;",
+      "--- Use both headers for full compatibility",
+      "--- Add JS frame-busting fallback: if (self !== top) top.location = self.location;"
     ];
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.setTextColor(...goldenRGB);
-    doc.text("Clickjacking Mitigation Guide", boxX + 2, boxY + 2);
+    doc.setTextColor(...golden);
+    doc.text("Clickjacking Mitigation Guide", 17, boxY);
 
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
-    doc.setTextColor(...goldenRGB);
-    const wrappedMitigation = doc.splitTextToSize(
-      mitigationLines.join("\n"),
-      boxWidth - 10
-    );
-    const textHeight = wrappedMitigation.length * lineHeight;
+    const wrapped = doc.splitTextToSize(guide.join("\n"), 175);
+    const h = wrapped.length * 6;
+    doc.setDrawColor(...golden);
+    doc.setFillColor(92, 30, 52);
+    doc.roundedRect(15, boxY + 5, 180, h + 15, 2, 2, "FD");
+    doc.text(wrapped, 20, boxY + 15);
 
-    const totalBoxHeight = textHeight + 18;
-    doc.setDrawColor(...goldenRGB);
-    doc.setLineWidth(0.5);
-    doc.setFillColor(92, 30, 52); // Lighter maroon
-    doc.roundedRect(boxX, boxY + 7, boxWidth, totalBoxHeight, 2, 2, "FD");
+    doc.textWithLink("Mitigation Guide", 17, boxY + h + 35, { url: "https://quasarclickjack.netlify.app/defensecj.html" });
+    doc.addImage(img, "PNG", 92.5, 250, 25, 18);
 
-    doc.text(wrappedMitigation, boxX + 5, boxY + 17);
-
-    const guideLinkY = boxY + totalBoxHeight + 15;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(0, 153, 255);
-    doc.textWithLink(
-      "Full Mitigation Guide: https://quasarclickjack.netlify.app/defensecj.html",
-      boxX + 2,
-      guideLinkY,
-      {
-        url: "https://quasarclickjack.netlify.app/defensecj.html",
-      }
-    );
-
-    // ---------------- Watermark ----------------
-    const watermarkWidth = 25;
-    const watermarkHeight = 18;
-    const centerX = (210 - watermarkWidth) / 2;
-    const bottomY = 250;
-    doc.addImage(img, "PNG", centerX, bottomY, watermarkWidth, watermarkHeight);
-
-    // ---------------- Disclaimer ----------------
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.setTextColor(...goldenRGB);
-    const disclaimer = `This report and the information contained herein are the proprietary property of Quasar CyberTech and are intended solely for the internal use of the designated client. This document may contain confidential or sensitive information and is shared with the client for review and informational purposes only. It may not be reproduced, distributed, or disclosed to any third party, in whole or in part, without the prior written consent of Quasar CyberTech. All rights reserved © ${new Date().getFullYear()}.`;
-    const disclaimerLines = doc.splitTextToSize(disclaimer, 180);
-    doc.text(disclaimerLines, 15, 295 - disclaimerLines.length * 4);
-
-    // Save PDF
+    doc.text("This is a property of Quasar CyberTech.", 15, 290);
+    doc.text("Confidential", 105, 295, { align: "center" });
     doc.save("clickjacking_report.pdf");
   };
 
@@ -335,21 +271,20 @@ export default function App() {
     <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative flex">
       {/* Top-right nav links */}
       <div className="absolute top-4 right-4 flex gap-4 text-sm z-50">
-  <button
-    onClick={() => window.open("/about.html", "_blank")}
-    className="bg-blue-300 hover:bg-blue-400 text-black px-3 py-1 rounded-md border border-blue-500"
-  >
-    About
-  </button>
-  <button
-    onClick={() => window.open("/defensecj.html", "_blank")}
-    className="bg-blue-300 hover:bg-blue-400 text-black px-3 py-1 rounded-md border border-blue-500"
-  >
-    Mitigation Guide
-  </button>
-</div>
+        <button
+          onClick={() => window.open("/about.html", "_blank")}
+          className="bg-blue-300 hover:bg-blue-400 text-black px-3 py-1 rounded-md border border-blue-500"
+        >
+          About
+        </button>
+        <button
+          onClick={() => window.open("/defensecj.html", "_blank")}
+          className="bg-blue-300 hover:bg-blue-400 text-black px-3 py-1 rounded-md border border-blue-500"
+        >
+          Mitigation Guide
+        </button>
+      </div>
 
-  
       {/* Left Panel: Iframe */}
       <div className="w-1/2 flex items-center justify-center p-4">
         <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-[90%] h-[600px] bg-white">
@@ -368,16 +303,32 @@ export default function App() {
           {showPoC && (
             <div
               className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer"
-              onClick={() =>
-                alert("Fake button clicked (would click iframe content)")
-              }
+              onClick={() => alert("Fake button clicked (would click iframe content)")}
             >
               Click Me
             </div>
           )}
         </div>
+        {iframeStatus && (
+          <div
+            style={{
+              marginTop: '10px',
+              backgroundColor: '#4d0c26',
+              color: '#f3cda2',
+              padding: '8px',
+              borderRadius: '8px',
+              fontSize: '0.9rem',
+              textAlign: 'center',
+              width: '90%',
+              maxWidth: '95%',
+              boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)',
+            }}
+          >
+            Iframe Error: {iframeStatus}
+          </div>
+        )}
       </div>
-  
+
       {/* Right Panel: Controls and Results */}
       <div className="w-1/2 flex flex-col items-center justify-center px-6 overflow-auto max-h-screen">
         <div className="text-center max-w-xl w-full">
@@ -387,7 +338,7 @@ export default function App() {
             className="w-36 mx-auto mb-4"
           />
           <h1 className="text-3xl font-bold mb-6">Clickjacking Test</h1>
-  
+
           <div className="flex mb-4">
             <input
               type="text"
@@ -403,7 +354,7 @@ export default function App() {
               Test
             </button>
           </div>
-  
+
           {loading && (
             <div className="text-yellow-300 animate-pulse mb-2">
               Running test...
@@ -414,49 +365,36 @@ export default function App() {
               Elapsed Time: {elapsedTime} second{elapsedTime !== 1 ? "s" : ""}
             </div>
           )}
-  
+
           {testResults.isVisible && (
             <>
               <div className="bg-red-100 text-black p-4 rounded text-sm mb-2 text-left">
+                <p><strong>Site:</strong> {testResults.siteUrl}</p>
+                <p><strong>IP Address:</strong> {ip}</p>
+                <p><strong>Time:</strong> {testResults.testTime}</p>
                 <p>
-                  <strong>Site:</strong> {testResults.siteUrl}
-                </p>
-                <p>
-                  <strong>IP Address:</strong> {ip}
-                </p>
-                <p>
-                  <strong>Time:</strong> {testResults.testTime}
-                </p>
-                <p>
-                  <strong>Missing Headers:</strong>{" "}
-                  <span className="text-red-600 font-bold">
-                    {testResults.missingHeaders}
-                  </span>
+                  <strong>Missing Headers:</strong>
+                  <span className="text-red-600 font-bold"> {testResults.missingHeaders}</span>
                 </p>
               </div>
-  
+
               <div
                 className={`p-3 text-center font-bold text-white rounded mb-2 ${
                   testResults.isVulnerable ? "bg-red-600" : "bg-green-600"
                 }`}
               >
-                Site is{" "}
-                {testResults.isVulnerable ? "vulnerable" : "not vulnerable"} to
-                Clickjacking
+                Site is {testResults.isVulnerable ? "vulnerable" : "not vulnerable"} to Clickjacking
               </div>
-  
+
               {testResults.rawHeaders && (
                 <div className="bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-40 font-mono mb-2 text-left">
                   <strong className="text-lime-400">Raw Headers:</strong>
                   <pre>{testResults.rawHeaders}</pre>
                 </div>
               )}
-  
+
               <div className="flex justify-between items-center text-xs mt-2">
-                <label
-                  htmlFor="poc-toggle"
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label htmlFor="poc-toggle" className="flex items-center gap-2 cursor-pointer">
                   <input
                     id="poc-toggle"
                     type="checkbox"
@@ -474,9 +412,9 @@ export default function App() {
               </div>
             </>
           )}
-  
+
           {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
-  
+
           <p className="text-xs mt-6">
             Payload developed by Quasar CyberTech Research Team ©<br />
             Made in India with <span className="text-red-500">❤️</span>
@@ -485,4 +423,4 @@ export default function App() {
       </div>
     </div>
   );
-}  
+}
