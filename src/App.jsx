@@ -345,16 +345,14 @@ export default function App() {
           Mitigation Guide
         </a>
       </div>
-
-    <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative">
-      {/* ... rest of JSX remains the same, except iframe loading indicator ... */}
       <div className="w-1/2 flex items-center justify-center p-4">
-        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-full h-[90%] bg-white">
-          <iframe
-            ref={testFrameRef}
-            className="w-full h-full opacity-40"
-            title="Test Frame"
-          />
+      <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-[90%] h-[500px] bg-white">
+  <iframe
+    ref={testFrameRef}
+    className="w-full h-full opacity-40"
+    title="Test Frame"
+  />
+
           {iframeLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
               <div className="text-black font-bold animate-pulse">
