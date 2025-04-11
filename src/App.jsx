@@ -12,6 +12,7 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [showPoC, setShowPoC] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
 
   const [testResults, setTestResults] = useState({
@@ -60,6 +61,67 @@ export default function App() {
     window.location.reload();
   };
 
+  // ---------------- Helper: Check Headers ----------------
+  const checkMissingSecurityHeaders = (headers) => {
+    const xfo = headers["x-frame-options"];
+    const csp = headers["content-security-policy"];
+
+    const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
+    const hasCSP = csp && /frame-ancestors/i.test(csp);
+
+    const missing = [];
+    if (!hasXFO) missing.push("X-Frame-Options");
+    if (!hasCSP) missing.push("CSP frame-ancestors");
+
+    return {
+      hasXFO,
+      hasCSP,
+      missing,
+    };
+  };
+
+  // ---------------- Helper: iFrame Load Test ----------------
+  const checkIframeBehavior = async (targetUrl) => {
+    return new Promise((resolve) => {
+      let iframeLoaded = false;
+
+      const iframe = testFrameRef.current;
+      if (!iframe) return resolve(false);
+
+      setIframeLoading(true);
+
+      const timeout = setTimeout(() => {
+        setIframeLoading(false);
+        resolve(false);
+      }, 10000);
+
+      iframe.onload = () => {
+        clearTimeout(timeout);
+        setIframeLoading(false);
+        iframeLoaded = true;
+        resolve(true);
+      };
+
+      iframe.onerror = () => {
+        clearTimeout(timeout);
+        setIframeLoading(false);
+        resolve(false);
+      };
+
+      iframe.src = targetUrl;
+    });
+  };
+
+  // ---------------- Placeholder: JS Frame Busting Detection ----------------
+  const checkJavaScriptFrameBusting = () => {
+    // Can't detect from outside domain due to cross-origin restrictions
+    return {
+      detected: false,
+      reason: "Unable to detect JS-based frame busting from a different origin.",
+    };
+  };
+
+  // ---------------- Main Test Function ----------------
   const runClickjackingTest = async (targetUrl) => {
     setError(null);
     setResult(null);
@@ -85,59 +147,30 @@ export default function App() {
       const ipAddr = res.data.ip || "-";
       setIP(ipAddr);
 
-      const xfo = headers["x-frame-options"];
-      const csp = headers["content-security-policy"];
-
-      const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
-      const hasCSP = csp && /frame-ancestors/i.test(csp);
-
-      const missingHeaders = [];
-      if (!hasXFO) missingHeaders.push("X-Frame-Options");
-      if (!hasCSP) missingHeaders.push("CSP frame-ancestors");
-
-      let iframeLoaded = false;
-
-      const loadPromise = new Promise((resolve) => {
-        const iframe = testFrameRef.current;
-        if (!iframe) return resolve();
-
-        iframe.onload = () => {
-          iframeLoaded = true;
-          resolve();
-        };
-
-        iframe.onerror = () => resolve();
-        iframe.src = targetUrl;
-      });
-
-      const timeoutPromise = new Promise((resolve) =>
-        setTimeout(resolve, 10000)
-      );
-      await Promise.race([loadPromise, timeoutPromise]);
-
-      if (iframeLoaded) await new Promise((res) => setTimeout(res, 1000));
+      const headerAnalysis = checkMissingSecurityHeaders(headers);
+      const iframeLoaded = await checkIframeBehavior(targetUrl);
+      const jsBusting = checkJavaScriptFrameBusting();
 
       let vulnerable = false;
       let reason = "";
 
       if (!iframeLoaded) {
         vulnerable = false;
-        reason = missingHeaders.length
-          ? "Page refused to render in iframe, even though headers are missing. Possibly protected by other mechanisms."
-          : "Page refused to render in iframe, protected.";
+        reason =
+          "Page could not be rendered in an iframe. Considered NOT vulnerable.";
       } else {
-        if (!hasXFO) {
+        if (!headerAnalysis.hasXFO) {
           vulnerable = true;
           reason =
             "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
-        } else if (!hasCSP) {
+        } else if (!headerAnalysis.hasCSP) {
           vulnerable = false;
           reason =
-            "Page loaded in iframe but has X-Frame-Options. Missing CSP frame-ancestors.";
+            "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
         } else {
           vulnerable = false;
           reason =
-            "Page loaded in iframe but has both headers. Should be safe.";
+            "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
         }
       }
 
@@ -145,8 +178,8 @@ export default function App() {
         isVisible: true,
         siteUrl: targetUrl,
         testTime: new Date().toUTCString(),
-        missingHeaders: missingHeaders.length
-          ? missingHeaders.join(", ")
+        missingHeaders: headerAnalysis.missing.length
+          ? headerAnalysis.missing.join(", ")
           : "None - Site is protected",
         isVulnerable: vulnerable,
         reason,
@@ -313,26 +346,35 @@ export default function App() {
         </a>
       </div>
 
-      <div className="flex h-full">
-        <div className="w-1/2 flex items-center justify-center p-4">
-          <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-full h-[90%] bg-white">
-            <iframe
-              ref={testFrameRef}
-              className="w-full h-full opacity-40"
-              title="Test Frame"
-            />
-            {showPoC && (
-              <div
-                className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer"
-                onClick={() =>
-                  alert("Fake button clicked (would click iframe content)")
-                }
-              >
-                Click Me
+      return (
+    <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative">
+      {/* ... rest of JSX remains the same, except iframe loading indicator ... */}
+      <div className="w-1/2 flex items-center justify-center p-4">
+        <div className="relative border border-red-600 rounded-xl overflow-hidden shadow-xl w-full h-[90%] bg-white">
+          <iframe
+            ref={testFrameRef}
+            className="w-full h-full opacity-40"
+            title="Test Frame"
+          />
+          {iframeLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
+              <div className="text-black font-bold animate-pulse">
+                Loading site in iframe...
               </div>
-            )}
-          </div>
+            </div>
+          )}
+          {showPoC && (
+            <div
+              className="absolute top-1/2 left-1/2 z-20 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded cursor-pointer"
+              onClick={() =>
+                alert("Fake button clicked (would click iframe content)")
+              }
+            >
+              Click Me
+            </div>
+          )}
         </div>
+      </div>
 
         <div className="w-1/2 flex flex-col items-center justify-center px-6 overflow-hidden">
           <div className="text-center max-w-xl w-full">
