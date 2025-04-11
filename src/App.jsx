@@ -1,4 +1,3 @@
-// ✅ CLEANED VERSION — html2canvas removed, original jsPDF logic preserved
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import jsPDF from "jspdf";
@@ -165,17 +164,17 @@ export default function App() {
         vulnerable = false;
         reason = `Page did not render in iframe. Reason: ${iframeStatus}`;
       } else if (csp.includes("frame-ancestors") && !csp.includes(ourOrigin)) {
-        vulnerable = false;
-        reason = `Iframe loaded, but domain is not whitelisted in CSP frame-ancestors.`;
+        vulnerable = true;
+        reason = `Iframe loaded but 'quasarclickjack.netlify.app' is not whitelisted in CSP frame-ancestors. Vulnerable.`;
       } else if (!headerAnalysis.hasXFO) {
         vulnerable = true;
         reason = `Iframe loaded and missing X-Frame-Options. Vulnerable.`;
       } else if (!headerAnalysis.hasCSP) {
-        vulnerable = false;
-        reason = `Iframe loaded but CSP frame-ancestors is missing.`;
+        vulnerable = true;
+        reason = `Iframe loaded and CSP frame-ancestors is missing. Vulnerable.`;
       } else {
         vulnerable = false;
-        reason = `Iframe loaded and headers present. Protected.`;
+        reason = `Iframe loaded and headers present. Site appears protected.`;
       }
 
       setTestResults({
