@@ -175,111 +175,99 @@ export default function App() {
     const doc = new jsPDF();
     const img = new Image();
     img.src = watermark;
-
+  
+    // Background color (maroon)
     doc.setFillColor("#4d0c26");
     doc.rect(0, 0, 210, 297, "F");
-
+  
     const goldenRGB = [243, 205, 162];
     doc.setTextColor(...goldenRGB);
-
-    doc.setFontSize(12);
-    doc.text(`Site Tested: ${testResults.siteUrl}`, 15, 35);
-    doc.text(`IP Address: ${ip}`, 15, 45);
-    doc.text(`Test Time: ${testResults.testTime}`, 15, 55);
-    doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
-    doc.text(
-      "Vulnerability Status: " +
-        (testResults.isVulnerable ? "VULNERABLE" : "Not Vulnerable"),
-      15,
-      75
-    );
-
-    //changes by w0lf
-    // Header: Confidential + Title with golden line
-    doc.setTextColor(...goldenRGB);
+  
+    // Header – Confidential (top-right)
     doc.setFont("courier", "bold");
     doc.setFontSize(10);
     doc.text("Confidential", 195, 10, { align: "right" });
-
-    // Golden horizontal line below "Confidential"
+  
+    // Horizontal Line
     doc.setDrawColor(...goldenRGB);
     doc.setLineWidth(0.5);
-    doc.line(15, 14, 195, 14); // from left to right edge
-
-    // Title below the line with some spacing
-    doc.setFontSize(22);
+    doc.line(15, 14, 195, 14);
+  
+    // Title
     doc.setFont("helvetica", "bold");
-    doc.text("Quasar CyberTech – Clickjacking Report", 15, 26); // add line spacing here
-
-    // -----------------
-    // Raw Headers Section
-    // -----------------
-    const rawHeadersStartY = 85;
-    const headerBoxWidth = 180;
-    const headerBoxX = 15;
-    const borderRadius = 3;
-
-    doc.setFont("courier", "normal");
-    doc.setFontSize(10);
-    const headerLines = doc.splitTextToSize(
-      testResults.rawHeaders || "",
-      headerBoxWidth - 8
+    doc.setFontSize(22);
+    doc.text("Quasar CyberTech – Clickjacking Report", 15, 26);
+  
+    // Section: Basic Info
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    const infoStartY = 38;
+    const lineSpacing = 10;
+    doc.text(`Site Tested: ${testResults.siteUrl}`, 15, infoStartY);
+    doc.text(`IP Address: ${ip}`, 15, infoStartY + lineSpacing);
+    doc.text(`Test Time: ${testResults.testTime}`, 15, infoStartY + lineSpacing * 2);
+    doc.text(
+      `Missing Headers: ${testResults.missingHeaders || "None"}`,
+      15,
+      infoStartY + lineSpacing * 3
     );
-    const lineHeight = 4.5;
-    const headerBoxHeight = headerLines.length * lineHeight + 8;
-
-    let headerBoxY = rawHeadersStartY + 5;
-    const pageHeight = 297;
-    const bottomMargin = 25;
-    const availableHeight = pageHeight - bottomMargin;
-
-    // Check if the box will overflow
-    if (headerBoxY + headerBoxHeight > availableHeight) {
-      doc.addPage();
-      headerBoxY = 20; // Reset position on new page
-    }
-
-    // Draw the maroon box with golden border
-    doc.setFillColor(109, 28, 49);
-    doc.setDrawColor(...goldenRGB);
-    doc.roundedRect(
-      headerBoxX,
-      headerBoxY,
-      headerBoxWidth,
-      headerBoxHeight,
-      borderRadius,
-      borderRadius,
-      "FD"
+    doc.text(
+      `Vulnerability Status: ${testResults.isVulnerable ? "VULNERABLE" : "Not Vulnerable"}`,
+      15,
+      infoStartY + lineSpacing * 4
     );
-
-    // Draw section title above the box
-    doc.setTextColor(...goldenRGB);
+  
+    // Section: Mitigation Guide (No container)
+    const mitigationY = infoStartY + lineSpacing * 6;
     doc.setFont("courier", "bold");
     doc.setFontSize(12);
-    doc.text("Raw Headers:", headerBoxX, headerBoxY - 6); // position above the container
-
-    // Draw the header content
+    doc.setTextColor(...goldenRGB);
+    doc.text("🔒 Clickjacking Mitigation Guide", 15, mitigationY);
+  
+    // Content
+    const mitigationLines = [
+      "• Use X-Frame-Options header: DENY or SAMEORIGIN",
+      "• Prefer Content-Security-Policy with frame-ancestors",
+      "    → 'none' to block all, 'self' for same-origin, or specific domains",
+      "• Avoid relying on a single header—use both for compatibility",
+      "• Implement frame-busting script (for legacy browsers):",
+      "    if (self !== top) top.location = self.location;",
+    ];
     doc.setFont("courier", "normal");
     doc.setFontSize(10);
     doc.setTextColor(...goldenRGB);
-    doc.text(headerLines, headerBoxX + 4, headerBoxY + 6); // slightly padded inside the box
-    //changes by w0lf
-
+    doc.text(mitigationLines, 17, mitigationY + 12);
+  
+    // Link to Full Guide
+    doc.setFont("courier", "bold");
+    doc.setTextColor(0, 153, 255);
+    doc.textWithLink(
+      "Full guide: https://quasarclickjack.netlify.app/defensecj.html",
+      17,
+      mitigationY + 12 + mitigationLines.length * 5,
+      {
+        url: "https://quasarclickjack.netlify.app/defensecj.html",
+      }
+    );
+  
+    // Watermark – centered bottom
     const watermarkWidth = 25;
     const watermarkHeight = 18;
     const centerX = (210 - watermarkWidth) / 2;
     const bottomY = 250;
     doc.addImage(img, "PNG", centerX, bottomY, watermarkWidth, watermarkHeight);
-
+  
+    // Disclaimer
     doc.setFont("times", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...goldenRGB);
     const disclaimer = `This report and the information contained herein are the proprietary property of Quasar CyberTech and are intended solely for the internal use of the designated client. This document may contain confidential or sensitive information and is shared with the client for review and informational purposes only. It may not be reproduced, distributed, or disclosed to any third party, in whole or in part, without the prior written consent of Quasar CyberTech. All rights reserved © ${new Date().getFullYear()}.`;
     const disclaimerLines = doc.splitTextToSize(disclaimer, 180);
     doc.text(disclaimerLines, 15, 295 - disclaimerLines.length * 4);
-
+  
     doc.save("clickjacking_report.pdf");
   };
+  
 
   return (
     <div className="h-screen overflow-hidden bg-[#4d0c26] text-[#f3cda2] font-sans relative">
