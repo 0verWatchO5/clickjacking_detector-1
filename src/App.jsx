@@ -195,8 +195,9 @@ export default function App() {
     const headerBoxY = rawHeadersStartY + 5;
     const borderRadius = 3; // subtle rounding
 
-    doc.setFillColor(77, 12, 38); // light maroon
-    doc.roundedRect(headerBoxX, headerBoxY, headerBoxWidth, headerBoxHeight, borderRadius, borderRadius, 'F');
+    doc.setFillColor(109, 28, 49); // light maroon (adjusted)
+    doc.setDrawColor(...goldenRGB); // golden border
+    doc.roundedRect(headerBoxX, headerBoxY, headerBoxWidth, headerBoxHeight, borderRadius, borderRadius, 'FD');
 
     doc.setTextColor(...goldenRGB);
     doc.setFont('courier', 'bold');
@@ -206,8 +207,8 @@ export default function App() {
     doc.setTextColor(...goldenRGB);
     doc.setFont('courier', 'normal');
     doc.setFontSize(8);
-    const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', headerBoxWidth - 6);
-    doc.text(headerLines, headerBoxX + 2, headerBoxY + 6);
+    const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', headerBoxWidth - 8);
+    doc.text(headerLines, headerBoxX + 4, headerBoxY + 8); // better spacing
     // changes by w0lf end
 
     const watermarkWidth = 25;
