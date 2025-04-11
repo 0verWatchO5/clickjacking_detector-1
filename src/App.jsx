@@ -219,30 +219,30 @@ export default function App() {
   
     // Section: Mitigation Guide (No container)
     const mitigationY = infoStartY + lineSpacing * 6;
-    doc.setFont("courier", "bold");
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...goldenRGB);
-    doc.text("🔒 Clickjacking Mitigation Guide", 15, mitigationY);
+    doc.text("Clickjacking Mitigation Guide", 15, mitigationY);
   
     // Content
     const mitigationLines = [
       "• Use X-Frame-Options header: DENY or SAMEORIGIN",
       "• Prefer Content-Security-Policy with frame-ancestors",
-      "    → 'none' to block all, 'self' for same-origin, or specific domains",
+      "  'none' to block all, 'self' for same-origin, or specific domains",
       "• Avoid relying on a single header—use both for compatibility",
       "• Implement frame-busting script (for legacy browsers):",
       "    if (self !== top) top.location = self.location;",
     ];
-    doc.setFont("courier", "normal");
-    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
     doc.setTextColor(...goldenRGB);
     doc.text(mitigationLines, 17, mitigationY + 12);
   
     // Link to Full Guide
-    doc.setFont("courier", "bold");
+    doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 153, 255);
     doc.textWithLink(
-      "Full guide: https://quasarclickjack.netlify.app/defensecj.html",
+      "Full Mitigation Guide: https://quasarclickjack.netlify.app/defensecj.html",
       17,
       mitigationY + 12 + mitigationLines.length * 5,
       {
