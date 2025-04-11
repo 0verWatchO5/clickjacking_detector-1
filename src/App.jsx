@@ -61,7 +61,6 @@ export default function App() {
     window.location.reload();
   };
 
-  // ---------------- Helper: Check Headers ----------------
   const checkMissingSecurityHeaders = (headers) => {
     const xfo = headers["x-frame-options"];
     const csp = headers["content-security-policy"];
@@ -73,55 +72,62 @@ export default function App() {
     if (!hasXFO) missing.push("X-Frame-Options");
     if (!hasCSP) missing.push("CSP frame-ancestors");
 
-    return {
-      hasXFO,
-      hasCSP,
-      missing,
-    };
+    return { hasXFO, hasCSP, missing };
   };
 
-  // ---------------- Helper: iFrame Load Test ----------------
   const checkIframeBehavior = async (targetUrl) => {
     return new Promise((resolve) => {
-      let iframeLoaded = false;
-
       const iframe = testFrameRef.current;
-      if (!iframe) return resolve(false);
+      if (!iframe) return resolve({ loaded: false, reason: "Iframe reference not found" });
 
       setIframeLoading(true);
+      let reason = "Unknown error";
+      let visibilityCheck = null;
 
       const timeout = setTimeout(() => {
+        clearInterval(visibilityCheck);
         setIframeLoading(false);
-        resolve(false);
-      },20000);
+        resolve({ loaded: false, reason: "Iframe load timed out (possible CSP block or network error)" });
+      }, 15000);
 
       iframe.onload = () => {
         clearTimeout(timeout);
+
+        visibilityCheck = setInterval(() => {
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            const isHidden = iframeDoc?.documentElement?.style?.display === "none";
+            if (isHidden) {
+              clearInterval(visibilityCheck);
+              setIframeLoading(false);
+              resolve({ loaded: false, reason: "Iframe loaded but content is hidden via JS – possible JS frame busting" });
+            }
+          } catch (err) {
+            clearInterval(visibilityCheck);
+          }
+        }, 1000);
+
         setIframeLoading(false);
-        iframeLoaded = true;
-        resolve(true);
+        resolve({ loaded: true, reason: "Iframe loaded successfully" });
       };
 
       iframe.onerror = () => {
         clearTimeout(timeout);
         setIframeLoading(false);
-        resolve(false);
+        resolve({ loaded: false, reason: "Iframe failed to load (error event)" });
       };
 
       iframe.src = targetUrl;
     });
   };
 
-  // ---------------- Placeholder: JS Frame Busting Detection ----------------
   const checkJavaScriptFrameBusting = () => {
-    // Can't detect from outside domain due to cross-origin restrictions
     return {
       detected: false,
       reason: "Unable to detect JS-based frame busting from a different origin.",
     };
   };
 
-  // ---------------- Main Test Function ----------------
   const runClickjackingTest = async (targetUrl) => {
     setError(null);
     setResult(null);
@@ -140,38 +146,38 @@ export default function App() {
     });
 
     try {
-      const res = await axios.post("/.netlify/functions/checkHeaders", {
-        url: targetUrl,
-      });
+      const res = await axios.post("/.netlify/functions/checkHeaders", { url: targetUrl });
       const headers = res.data.headers || {};
       const ipAddr = res.data.ip || "-";
       setIP(ipAddr);
 
       const headerAnalysis = checkMissingSecurityHeaders(headers);
-      const iframeLoaded = await checkIframeBehavior(targetUrl);
+      const iframeResult = await checkIframeBehavior(targetUrl);
+      const iframeLoaded = iframeResult.loaded;
+      const iframeReason = iframeResult.reason;
+
       const jsBusting = checkJavaScriptFrameBusting();
+      const csp = headers["content-security-policy"] || "";
+      const ourOrigin = "https://quasarclickjack.netlify.app/";
 
       let vulnerable = false;
       let reason = "";
 
       if (!iframeLoaded) {
         vulnerable = false;
-        reason =
-          "Page could not be rendered in an iframe. Considered NOT vulnerable.";
+        reason = `Page did not render in iframe. Reason: ${iframeReason}`;
+      } else if (csp.includes("frame-ancestors") && !csp.includes(ourOrigin)) {
+        vulnerable = false;
+        reason = `Iframe loaded, but your domain is not whitelisted in frame-ancestors. CSP is blocking.`;
+      } else if (!headerAnalysis.hasXFO) {
+        vulnerable = true;
+        reason = `Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.`;
+      } else if (!headerAnalysis.hasCSP) {
+        vulnerable = false;
+        reason = `Page loaded in iframe but missing CSP frame-ancestors. May be partially protected.`;
       } else {
-        if (!headerAnalysis.hasXFO) {
-          vulnerable = true;
-          reason =
-            "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
-        } else if (!headerAnalysis.hasCSP) {
-          vulnerable = false;
-          reason =
-            "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
-        } else {
-          vulnerable = false;
-          reason =
-            "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
-        }
+        vulnerable = false;
+        reason = `Page loaded in iframe but has both XFO and CSP frame-ancestors. Protected.`;
       }
 
       setTestResults({
