@@ -187,25 +187,28 @@ export default function App() {
     doc.text(`Missing Headers: ${testResults.missingHeaders}`, 15, 65);
     doc.text('Vulnerability Status: ' + (testResults.isVulnerable ? 'VULNERABLE' : 'Not Vulnerable'), 15, 75);
 
+    // changes by w0lf start
     const rawHeadersStartY = 85;
     const headerBoxHeight = 80;
     const headerBoxWidth = 180;
     const headerBoxX = 15;
     const headerBoxY = rawHeadersStartY + 5;
+    const borderRadius = 3; // subtle rounding
 
-    // Draw dark background box
-    doc.setFillColor(33, 33, 33); // Dark gray
-    doc.rect(headerBoxX, headerBoxY, headerBoxWidth, headerBoxHeight, 'F');
+    doc.setFillColor(77, 12, 38); // light maroon
+    doc.roundedRect(headerBoxX, headerBoxY, headerBoxWidth, headerBoxHeight, borderRadius, borderRadius, 'F');
 
-    // Write heading
     doc.setTextColor(...goldenRGB);
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(12);
     doc.text('Raw Headers:', 15, rawHeadersStartY);
 
-    // Write raw headers on top of the dark box in light green
-    doc.setTextColor(144, 238, 144); // Light green
-    const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', 176);
-    doc.text(headerLines, 17, headerBoxY + 6);
-
+    doc.setTextColor(...goldenRGB);
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(8);
+    const headerLines = doc.splitTextToSize(testResults.rawHeaders || '', headerBoxWidth - 6);
+    doc.text(headerLines, headerBoxX + 2, headerBoxY + 6);
+    // changes by w0lf end
 
     const watermarkWidth = 25;
     const watermarkHeight = 18;
