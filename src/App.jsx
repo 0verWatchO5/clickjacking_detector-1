@@ -241,7 +241,7 @@ export default function App() {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(...goldenRGB);
-    doc.text("Clickjacking Mitigation Guide", boxX + 2, boxY + 8);
+    doc.text("Clickjacking Mitigation Guide", boxX + 2, boxY + 2);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
