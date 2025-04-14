@@ -61,7 +61,6 @@ export default function App() {
     window.location.reload();
   };
 
-  // ---------------- Helper: Check Headers ----------------
   const checkMissingSecurityHeaders = (headers) => {
     const xfo = headers["x-frame-options"];
     const csp = headers["content-security-policy"];
@@ -80,7 +79,27 @@ export default function App() {
     };
   };
 
-  // ---------------- Helper: iFrame Load Test ----------------
+  const detectCrossOriginBlocking = (headers) => {
+    const csp = headers["content-security-policy"];
+    const xfo = headers["x-frame-options"];
+
+    let blocked = false;
+    let reason = "";
+
+    if (xfo && /deny/i.test(xfo)) {
+      blocked = true;
+      reason = "X-Frame-Options: DENY blocks all framing.";
+    } else if (xfo && /sameorigin/i.test(xfo)) {
+      blocked = true;
+      reason = "X-Frame-Options: SAMEORIGIN blocks cross-origin framing.";
+    } else if (csp && /frame-ancestors/i.test(csp) && !/\bself\b/.test(csp)) {
+      blocked = true;
+      reason = "Content-Security-Policy frame-ancestors directive blocks cross-origin framing.";
+    }
+
+    return { blocked, reason };
+  };
+
   const checkIframeBehavior = async (targetUrl) => {
     return new Promise((resolve) => {
       let iframeLoaded = false;
@@ -93,7 +112,7 @@ export default function App() {
       const timeout = setTimeout(() => {
         setIframeLoading(false);
         resolve(false);
-      },20000);
+      }, 20000);
 
       iframe.onload = () => {
         clearTimeout(timeout);
@@ -112,16 +131,13 @@ export default function App() {
     });
   };
 
-  // ---------------- Placeholder: JS Frame Busting Detection ----------------
   const checkJavaScriptFrameBusting = () => {
-    // Can't detect from outside domain due to cross-origin restrictions
     return {
       detected: false,
       reason: "Unable to detect JS-based frame busting from a different origin.",
     };
   };
 
-  // ---------------- Main Test Function ----------------
   const runClickjackingTest = async (targetUrl) => {
     setError(null);
     setResult(null);
@@ -148,6 +164,7 @@ export default function App() {
       setIP(ipAddr);
 
       const headerAnalysis = checkMissingSecurityHeaders(headers);
+      const crossOriginBlock = detectCrossOriginBlocking(headers);
       const iframeLoaded = await checkIframeBehavior(targetUrl);
       const jsBusting = checkJavaScriptFrameBusting();
 
@@ -155,22 +172,23 @@ export default function App() {
       let reason = "";
 
       if (!iframeLoaded) {
-        vulnerable = false;
-        reason =
-          "Page could not be rendered in an iframe. Considered NOT vulnerable.";
+        if (crossOriginBlock.blocked) {
+          vulnerable = false;
+          reason = `Cross-origin framing is blocked: ${crossOriginBlock.reason}`;
+        } else {
+          vulnerable = false;
+          reason = "Page could not be rendered in an iframe. Considered NOT vulnerable.";
+        }
       } else {
         if (!headerAnalysis.hasXFO) {
           vulnerable = true;
-          reason =
-            "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
+          reason = "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
         } else if (!headerAnalysis.hasCSP) {
           vulnerable = false;
-          reason =
-            "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
+          reason = "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
         } else {
           vulnerable = false;
-          reason =
-            "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
+          reason = "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
         }
       }
 
