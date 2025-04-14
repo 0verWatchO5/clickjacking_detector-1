@@ -172,7 +172,7 @@ export default function App() {
       let vulnerable = false;
       let reason = "";
 
-      switch (true) {
+      switch (true || false) {
         // CASE 1: Page could not load AND missing both headers
         case !iframeLoaded && !headerAnalysis.hasXFO && !headerAnalysis.hasCSP:
           vulnerable = true;
