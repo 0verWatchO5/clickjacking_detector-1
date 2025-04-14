@@ -176,7 +176,11 @@ export default function App() {
         if (!headerAnalysis.hasXFO && !headerAnalysis.hasCSP) {
           vulnerable = true;
           reason =
-            "Page could not be rendered in an iframe and missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
+            "Page could not be rendered in an iframe and is missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
+        } else if (!headerAnalysis.hasXFO && headerAnalysis.hasCSP) {
+          vulnerable = false;
+          reason =
+            "Page could not be rendered in an iframe. X-Frame-Options is missing, but CSP is present and may be preventing embedding.";
         } else if (
           headerAnalysis.frameAncestors &&
           !headerAnalysis.allowsOurOrigin
@@ -192,19 +196,17 @@ export default function App() {
         if (!headerAnalysis.hasXFO) {
           vulnerable = true;
           reason =
-            "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
+            "Page loaded in iframe and is missing X-Frame-Options header. Vulnerable to clickjacking.";
         } else if (!headerAnalysis.hasCSP) {
           vulnerable = false;
           reason =
-            "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
+            "Page loaded in iframe and has X-Frame-Options, but is missing CSP frame-ancestors.";
         } else {
           vulnerable = false;
           reason =
-            "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
+            "Page loaded in iframe and has both X-Frame-Options and CSP frame-ancestors. Should be protected.";
         }
       }
-      
-      
 
       setTestResults({
         isVisible: true,
