@@ -75,7 +75,10 @@ export default function App() {
       const match = csp.match(/frame-ancestors\s([^;]+)/i);
       if (match) {
         frameAncestors = match[1].trim();
-        allowsOurOrigin = frameAncestors.includes("https://quasarclickjack.netlify.app") || frameAncestors.includes("*") || frameAncestors.includes("'self'");
+        allowsOurOrigin =
+          frameAncestors.includes("https://quasarclickjack.netlify.app") ||
+          frameAncestors.includes("*") ||
+          frameAncestors.includes("'self'");
       }
     }
   
@@ -93,6 +96,7 @@ export default function App() {
       missing,
     };
   };
+  
 
   // ---------------- Helper: iFrame Load Test ----------------
   const checkIframeBehavior = async (targetUrl) => {
@@ -168,29 +172,49 @@ export default function App() {
       let vulnerable = false;
       let reason = "";
 
-      if (!iframeLoaded) {
-        if (!headerAnalysis.hasXFO && !headerAnalysis.hasCSP) {
+      switch (true) {
+        // CASE 1: Page could not load AND missing both headers
+        case !iframeLoaded && !headerAnalysis.hasXFO && !headerAnalysis.hasCSP:
           vulnerable = true;
           reason = "Page could not be rendered in an iframe and missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
-        } else if (headerAnalysis.frameAncestors && !headerAnalysis.allowsOurOrigin) {
+          break;
+      
+        // CASE 2: Page could not load AND CSP restricts frame ancestors
+        case !iframeLoaded && headerAnalysis.frameAncestors && !headerAnalysis.allowsOurOrigin:
           vulnerable = false;
           reason = `Page blocked iframe load and CSP restricts to: ${headerAnalysis.frameAncestors}`;
-        } else {
+          break;
+      
+        // CASE 3: Page could not load BUT has some protection
+        case !iframeLoaded:
           vulnerable = false;
           reason = "Page could not be rendered in an iframe due to cross-origin restrictions, but has at least one security header.";
-        }
-      } else {
-        if (!headerAnalysis.hasXFO) {
+          break;
+      
+        // CASE 4: Page loaded but missing XFO
+        case iframeLoaded && !headerAnalysis.hasXFO:
           vulnerable = true;
           reason = "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
-        } else if (!headerAnalysis.hasCSP) {
+          break;
+      
+        // CASE 5: Page loaded, has XFO but missing CSP
+        case iframeLoaded && !headerAnalysis.hasCSP:
           vulnerable = false;
           reason = "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
-        }  else {
+          break;
+      
+        // CASE 6: Page loaded and has both protections
+        case iframeLoaded:
           vulnerable = false;
           reason = "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
-        }
+          break;
+      
+        default:
+          vulnerable = false;
+          reason = "Unexpected test result.";
+          break;
       }
+      
 
       setTestResults({
         isVisible: true,
