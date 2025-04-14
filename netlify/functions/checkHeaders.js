@@ -1,5 +1,6 @@
 const axios = require('axios');
 const dns = require('dns').promises;
+const Headers = require('header-case-insensitive'); // Import the header-case-insensitive library
 
 exports.handler = async (event) => {
   try {
@@ -29,14 +30,13 @@ exports.handler = async (event) => {
       timeout: 5000
     });
 
-    const headers = Object.fromEntries(
-      Object.entries(response.headers).map(([key, value]) => [key.toLowerCase(), value])
-    );
+    // Use header-case-insensitive to parse headers
+    const headers = new Headers(response.headers);
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        headers,
+        headers: headers.raw(), // Send headers in raw format
         ip
       })
     };
