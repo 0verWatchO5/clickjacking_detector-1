@@ -39,7 +39,7 @@ export default function App() {
     setTestResult(null);
     setIframeBlocked(null);
     try {
-      const response = await axios.post("/.netlify/functions/fetchHeaders", {
+      const response = await axios.post("/.netlify/functions/checkHeaders", {
         url,
       });
 
