@@ -6,201 +6,57 @@ import "./App.css";
 
 export default function App() {
   const [url, setUrl] = useState("");
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-  const [ip, setIP] = useState("-");
-  const [copied, setCopied] = useState(false);
-  const [showPoC, setShowPoC] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  const [rawHeaders, setRawHeaders] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [iframeLoading, setIframeLoading] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
-
-  const [testResults, setTestResults] = useState({
-    isVisible: false,
-    siteUrl: "-",
-    testTime: "-",
-    missingHeaders: "-",
-    isVulnerable: null,
-    reason: "",
-    rawHeaders: "",
-  });
-
-  const testFrameRef = useRef(null);
-  const timerRef = useRef(null);
+  const [iframeBlocked, setIframeBlocked] = useState(null);
+  const iframeRef = useRef(null);
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
-    const storedUrl = sessionStorage.getItem("runTestURL");
-    const shouldRun = sessionStorage.getItem("shouldRunTest");
+    if (iframeRef.current && testResult !== null) {
+      clearTimeout(timeoutRef.current);
 
-    if (shouldRun === "true" && storedUrl) {
-      setUrl(storedUrl);
-      sessionStorage.setItem("shouldRunTest", "false");
-      setTimeout(() => {
-        runClickjackingTest(storedUrl);
-      }, 1000);
+      timeoutRef.current = setTimeout(() => {
+        const iframe = iframeRef.current;
+        try {
+          // Try to access iframe content
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
+          if (doc && doc.body && doc.body.innerHTML.length > 0) {
+            setIframeBlocked(false); // iframe loaded content successfully
+          } else {
+            setIframeBlocked(true);
+          }
+        } catch (e) {
+          setIframeBlocked(true); // cross-origin access denied
+        }
+      }, 3000);
     }
-  }, []);
+  }, [testResult]);
 
-  const startTimer = () => {
-    setElapsedTime(0);
-    timerRef.current = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
-    }, 1000);
-  };
-
-  const stopTimer = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  const checkURL = () => {
-    sessionStorage.setItem("runTestURL", url);
-    sessionStorage.setItem("shouldRunTest", "true");
-    window.location.reload();
-  };
-
-  // ---------------- Helper: Check Headers ----------------
-  const checkMissingSecurityHeaders = (headers) => {
-    const xfo = headers["x-frame-options"];
-    const csp = headers["content-security-policy"];
-
-    const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
-    const hasCSP = csp && /frame-ancestors/i.test(csp);
-
-    const missing = [];
-    if (!hasXFO) missing.push("X-Frame-Options");
-    if (!hasCSP) missing.push("CSP frame-ancestors");
-
-    return {
-      hasXFO,
-      hasCSP,
-      missing,
-    };
-  };
-
-  // ---------------- Helper: iFrame Load Test ----------------
-  const checkIframeBehavior = async (targetUrl) => {
-    return new Promise((resolve) => {
-      let iframeLoaded = false;
-
-      const iframe = testFrameRef.current;
-      if (!iframe) return resolve(false);
-
-      setIframeLoading(true);
-
-      const timeout = setTimeout(() => {
-        setIframeLoading(false);
-        resolve(false);
-      }, 20000);
-
-      iframe.onload = () => {
-        clearTimeout(timeout);
-        setIframeLoading(false);
-        iframeLoaded = true;
-        resolve(true);
-      };
-
-      iframe.onerror = () => {
-        clearTimeout(timeout);
-        setIframeLoading(false);
-        resolve(false);
-      };
-
-      iframe.src = targetUrl;
-    });
-  };
-
-  // ---------------- Placeholder: JS Frame Busting Detection ----------------
-  const checkJavaScriptFrameBusting = () => {
-    // Can't detect from outside domain due to cross-origin restrictions
-    return {
-      detected: false,
-      reason: "Unable to detect JS-based frame busting from a different origin.",
-    };
-  };
-
-  // ---------------- Main Test Function ----------------
-  const runClickjackingTest = async (targetUrl) => {
-    setError(null);
-    setResult(null);
-    setCopied(false);
+  const runTest = async () => {
     setLoading(true);
-    startTimer();
-
-    setTestResults({
-      isVisible: false,
-      siteUrl: "-",
-      testTime: "-",
-      missingHeaders: "-",
-      isVulnerable: null,
-      reason: "",
-      rawHeaders: "",
-    });
-
+    setTestResult(null);
+    setIframeBlocked(null);
     try {
-      const res = await axios.post("/.netlify/functions/checkHeaders", {
-        url: targetUrl,
-      });
-      const headers = res.data.headers || {};
-      const ipAddr = res.data.ip || "-";
-      setIP(ipAddr);
-
-      const headerAnalysis = checkMissingSecurityHeaders(headers);
-      const iframeLoaded = await checkIframeBehavior(targetUrl);
-      const jsBusting = checkJavaScriptFrameBusting();
-
-      let vulnerable = false;
-      let reason = "";
-
-      if (!iframeLoaded) {
-        if (!headerAnalysis.hasXFO && !headerAnalysis.hasCSP) {
-          vulnerable = true;
-          reason = "Page could not be rendered in an iframe and missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
-        } else {
-          vulnerable = false;
-          reason = "Page could not be rendered in an iframe due to cross-origin restrictions, but has at least one security header.";
-        }
-      } else {
-        if (!headerAnalysis.hasXFO) {
-          vulnerable = true;
-          reason = "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
-        } else if (!headerAnalysis.hasCSP) {
-          vulnerable = false;
-          reason = "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
-        } else {
-          vulnerable = false;
-          reason = "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
-        }
-      }
-
-      setTestResults({
-        isVisible: true,
-        siteUrl: targetUrl,
-        testTime: new Date().toUTCString(),
-        missingHeaders: headerAnalysis.missing.length
-          ? headerAnalysis.missing.join(", ")
-          : "None - Site is protected",
-        isVulnerable: vulnerable,
-        reason,
-        rawHeaders: JSON.stringify(headers, null, 2),
+      const response = await axios.post("/.netlify/functions/fetchHeaders", {
+        url,
       });
 
-      setResult(res.data);
-    } catch (err) {
-      setError(err.response?.data?.error || "Request failed");
-      setTestResults({
-        isVisible: true,
-        siteUrl: targetUrl,
-        testTime: new Date().toUTCString(),
-        missingHeaders: "Error fetching headers",
-        isVulnerable: null,
-        reason: "Error fetching headers",
-        rawHeaders: "",
-      });
+      const headers = response.data.headers;
+      setRawHeaders(headers);
+
+      const missingHeaders = [];
+      const xFrameOptions = headers["x-frame-options"];
+      const csp = headers["content-security-policy"];
+
+      if (!xFrameOptions) missingHeaders.push("X-Frame-Options");
+      if (!csp || !/frame-ancestors/.test(csp)) missingHeaders.push("CSP frame-ancestors");
+
+      setTestResult({ missingHeaders, success: true });
+    } catch (error) {
+      setTestResult({ error: "Failed to fetch headers", success: false });
     } finally {
-      stopTimer();
       setLoading(false);
     }
   };
