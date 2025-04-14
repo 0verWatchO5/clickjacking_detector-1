@@ -173,32 +173,37 @@ export default function App() {
       let reason = "";
 
       if (!iframeLoaded) {
-        if (
+        if (!headerAnalysis.hasXFO && !headerAnalysis.hasCSP) {
+          vulnerable = true;
+          reason =
+            "Page could not be rendered in an iframe and missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
+        } else if (
           headerAnalysis.frameAncestors &&
           !headerAnalysis.allowsOurOrigin
         ) {
           vulnerable = false;
           reason = `Page blocked iframe load and CSP restricts to: ${headerAnalysis.frameAncestors}`;
-        } else if (!headerAnalysis.hasXFO && headerAnalysis.hasCSP) {
-          vulnerable = false;
-          reason =
-            "Page could not be rendered in an iframe. X-Frame-Options is missing, but CSP is present and may be preventing embedding.";
         } else {
           vulnerable = false;
           reason =
-            "Page could not be rendered in an iframe, but it is likely blocked by server-level configuration or other security controls.";
+            "Page could not be rendered in an iframe due to cross-origin restrictions, but has at least one security header.";
         }
       } else {
-        // iframeLoaded === true
-        if (headerAnalysis.frameAncestors && !headerAnalysis.allowsOurOrigin) {
+        if (!headerAnalysis.hasXFO) {
+          vulnerable = true;
+          reason =
+            "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
+        } else if (!headerAnalysis.hasCSP) {
           vulnerable = false;
-          reason = `Page loaded in iframe, but CSP should have blocked it. Possible CSP misconfiguration: ${headerAnalysis.frameAncestors}`;
+          reason =
+            "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
         } else {
           vulnerable = false;
           reason =
-            "Page loaded in iframe. It may allow embedding intentionally or lacks restrictions. Not considered vulnerable.";
+            "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
         }
       }
+      
       
 
       setTestResults({
