@@ -146,7 +146,7 @@ export default function App() {
     setCopied(false);
     setLoading(true);
     startTimer();
-
+  
     setTestResults({
       isVisible: false,
       siteUrl: "-",
@@ -155,28 +155,30 @@ export default function App() {
       isVulnerable: null,
       reason: "",
       rawHeaders: "",
+      fullResponse: "",
     });
-
+  
     try {
       const res = await axios.post("/.netlify/functions/checkHeaders", {
         url: targetUrl,
       });
+  
       const headers = res.data.headers || {};
       const ipAddr = res.data.ip || "-";
       setIP(ipAddr);
-
+  
       const headerAnalysis = checkMissingSecurityHeaders(headers);
       const iframeLoaded = await checkIframeBehavior(targetUrl);
       const jsBusting = checkJavaScriptFrameBusting();
-
+  
       let vulnerable = false;
       let reason = "";
-
+  
       if (!iframeLoaded) {
         if (!headerAnalysis.hasXFO && !headerAnalysis.hasCSP) {
           vulnerable = true;
           reason =
-            "Page could not be rendered in an iframe and missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
+            "Page could not be rendered in an iframe and is missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
         } else if (
           headerAnalysis.frameAncestors &&
           !headerAnalysis.allowsOurOrigin
@@ -188,24 +190,40 @@ export default function App() {
           reason =
             "Page could not be rendered in an iframe due to cross-origin restrictions, but has at least one security header.";
         }
-      } else {
-        if (!headerAnalysis.hasXFO) {
-          vulnerable = true;
-          reason =
-            "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
-        } else if (!headerAnalysis.hasCSP) {
-          vulnerable = false;
-          reason =
-            "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
-        } else {
-          vulnerable = false;
-          reason =
-            "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
-        }
+  
+        setTestResults({
+          isVisible: true,
+          siteUrl: targetUrl,
+          testTime: new Date().toUTCString(),
+          missingHeaders: headerAnalysis.missing.length
+            ? headerAnalysis.missing.join(", ")
+            : "None - Site is protected",
+          isVulnerable: vulnerable,
+          reason,
+          rawHeaders: JSON.stringify(headers, null, 2),
+          fullResponse: res.data.data || "",
+        });
+  
+        stopTimer();
+        setLoading(false);
+        return; // ✅ EARLY EXIT
       }
-      
-      
-
+  
+      // If iframe loaded, continue with header evaluation
+      if (!headerAnalysis.hasXFO) {
+        vulnerable = true;
+        reason =
+          "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
+      } else if (!headerAnalysis.hasCSP) {
+        vulnerable = false;
+        reason =
+          "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
+      } else {
+        vulnerable = false;
+        reason =
+          "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
+      }
+  
       setTestResults({
         isVisible: true,
         siteUrl: targetUrl,
@@ -216,8 +234,9 @@ export default function App() {
         isVulnerable: vulnerable,
         reason,
         rawHeaders: JSON.stringify(headers, null, 2),
+        fullResponse: res.data.data || "",
       });
-
+  
       setResult(res.data);
     } catch (err) {
       setError(err.response?.data?.error || "Request failed");
@@ -229,12 +248,14 @@ export default function App() {
         isVulnerable: null,
         reason: "Error fetching headers",
         rawHeaders: "",
+        fullResponse: "",
       });
     } finally {
       stopTimer();
       setLoading(false);
     }
   };
+  
 
   const exportPDF = async () => {
     const doc = new jsPDF();
