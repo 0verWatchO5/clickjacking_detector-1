@@ -172,6 +172,9 @@ export default function App() {
         if (!headerAnalysis.hasXFO && !headerAnalysis.hasCSP) {
           vulnerable = true;
           reason = "Page could not be rendered in an iframe and missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
+        } else if (headerAnalysis.frameAncestors && !headerAnalysis.allowsOurOrigin) {
+          vulnerable = false;
+          reason = `Page blocked iframe load and CSP restricts to: ${headerAnalysis.frameAncestors}`;
         } else {
           vulnerable = false;
           reason = "Page could not be rendered in an iframe due to cross-origin restrictions, but has at least one security header.";
@@ -183,10 +186,7 @@ export default function App() {
         } else if (!headerAnalysis.hasCSP) {
           vulnerable = false;
           reason = "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
-        } else if (headerAnalysis.frameAncestors && !headerAnalysis.allowsOurOrigin) {
-          vulnerable = false;
-          reason = `Page blocked iframe load and CSP restricts to: ${headerAnalysis.frameAncestors}`;
-        } else {
+        }  else {
           vulnerable = false;
           reason = "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
         }
