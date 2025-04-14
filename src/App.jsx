@@ -93,7 +93,7 @@ export default function App() {
       const timeout = setTimeout(() => {
         setIframeLoading(false);
         resolve(false);
-      },20000);
+      }, 20000);
 
       iframe.onload = () => {
         clearTimeout(timeout);
@@ -155,22 +155,23 @@ export default function App() {
       let reason = "";
 
       if (!iframeLoaded) {
-        vulnerable = false;
-        reason =
-          "Page could not be rendered in an iframe. Considered NOT vulnerable.";
+        if (!headerAnalysis.hasXFO && !headerAnalysis.hasCSP) {
+          vulnerable = true;
+          reason = "Page could not be rendered in an iframe and missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
+        } else {
+          vulnerable = false;
+          reason = "Page could not be rendered in an iframe due to cross-origin restrictions, but has at least one security header.";
+        }
       } else {
         if (!headerAnalysis.hasXFO) {
           vulnerable = true;
-          reason =
-            "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
+          reason = "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
         } else if (!headerAnalysis.hasCSP) {
           vulnerable = false;
-          reason =
-            "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
+          reason = "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
         } else {
           vulnerable = false;
-          reason =
-            "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
+          reason = "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
         }
       }
 
@@ -265,10 +266,10 @@ export default function App() {
     const mitigationLines = [
       "--- Use X-Frame-Options header: DENY or SAMEORIGIN",
       "--- Prefer Content-Security-Policy with frame-ancestors",
-      "      'none' to block all, 'self' for same-origin, or specific domains",
+      "    'none' to block all, 'self' for same-origin, or specific domains",
       "--- Avoid relying on a single header—use both for compatibility",
       "--- Implement frame-busting script (for legacy browsers):",
-      "       if (self !== top) top.location = self.location;",
+      "    if (self !== top) top.location = self.location;",
     ];
 
     doc.setFont("helvetica", "bold");
@@ -482,5 +483,4 @@ export default function App() {
       </div>
     </div>
   );
-}  
-//rollback push by w0lf
+}
