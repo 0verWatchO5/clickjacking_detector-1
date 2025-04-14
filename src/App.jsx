@@ -65,38 +65,20 @@ export default function App() {
   const checkMissingSecurityHeaders = (headers) => {
     const xfo = headers["x-frame-options"];
     const csp = headers["content-security-policy"];
-  
+
     const hasXFO = xfo && /deny|sameorigin/i.test(xfo);
-  
-    let frameAncestors = null;
-    let allowsOurOrigin = false;
-  
-    if (csp) {
-      const match = csp.match(/frame-ancestors\s([^;]+)/i);
-      if (match) {
-        frameAncestors = match[1].trim();
-        allowsOurOrigin =
-          frameAncestors.includes("https://quasarclickjack.netlify.app") ||
-          frameAncestors.includes("*") ||
-          frameAncestors.includes("'self'");
-      }
-    }
-  
-    const hasCSP = !!frameAncestors;
-  
+    const hasCSP = csp && /frame-ancestors/i.test(csp);
+
     const missing = [];
     if (!hasXFO) missing.push("X-Frame-Options");
     if (!hasCSP) missing.push("CSP frame-ancestors");
-  
+
     return {
       hasXFO,
       hasCSP,
-      allowsOurOrigin,
-      frameAncestors,
       missing,
     };
   };
-  
 
   // ---------------- Helper: iFrame Load Test ----------------
   const checkIframeBehavior = async (targetUrl) => {
@@ -172,39 +154,28 @@ export default function App() {
       let vulnerable = false;
       let reason = "";
 
-      if (!iframeLoaded) {
-        if (!headerAnalysis.hasXFO && !headerAnalysis.hasCSP) {
-          vulnerable = true;
-          reason =
-            "Page could not be rendered in an iframe and missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
-        } else if (
-          headerAnalysis.frameAncestors &&
-          !headerAnalysis.allowsOurOrigin
-        ) {
-          vulnerable = false;
-          reason = `Page blocked iframe load and CSP restricts to: ${headerAnalysis.frameAncestors}`;
-        } else {
-          vulnerable = false;
-          reason =
-            "Page could not be rendered in an iframe due to cross-origin restrictions, but has at least one security header.";
-        }
-      } else {
+      if (iframeLoaded) {
+        // Iframe loaded successfully, proceed with header check
         if (!headerAnalysis.hasXFO) {
           vulnerable = true;
-          reason =
-            "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
+          reason = "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
         } else if (!headerAnalysis.hasCSP) {
           vulnerable = false;
-          reason =
-            "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
+          reason = "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
         } else {
           vulnerable = false;
-          reason =
-            "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
+          reason = "Page loaded in iframe and has both XFO and CSP headers. Should be protected.";
+        }
+      } else {
+        // Iframe did NOT load - rely on server-side header check
+        if (headerAnalysis.missing.length > 0) {
+          vulnerable = true;
+          reason = `Page could not be rendered in an iframe. Missing security headers: ${headerAnalysis.missing.join(", ")}. Vulnerable to clickjacking.`;
+        } else {
+          vulnerable = false;
+          reason = "Page could not be rendered in an iframe, likely due to cross-origin restrictions. Security headers are present.";
         }
       }
-      
-      
 
       setTestResults({
         isVisible: true,
@@ -480,6 +451,7 @@ export default function App() {
                   <pre>{testResults.rawHeaders}</pre>
                 </div>
               )}
+  
               <div className="flex justify-between items-center text-xs mt-2">
                 <label
                   htmlFor="poc-toggle"
@@ -514,4 +486,3 @@ export default function App() {
     </div>
   );
 }
-//rollback by w0lf
