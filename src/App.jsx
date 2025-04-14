@@ -185,6 +185,7 @@ export default function App() {
         isVulnerable: vulnerable,
         reason,
         rawHeaders: JSON.stringify(headers, null, 2),
+        fullResponse: res.data.data || "",
       });
 
       setResult(res.data);
@@ -449,7 +450,12 @@ export default function App() {
                   <pre>{testResults.rawHeaders}</pre>
                 </div>
               )}
-  
+              {testResults.fullResponse && (
+                <div className="bg-black text-green-200 text-xs p-3 rounded overflow-auto max-h-60 font-mono mb-2 text-left">
+                  <strong className="text-lime-400">POST Response Body:</strong>
+                  <pre>{testResults.fullResponse}</pre>
+                </div>
+              )}
               <div className="flex justify-between items-center text-xs mt-2">
                 <label
                   htmlFor="poc-toggle"
