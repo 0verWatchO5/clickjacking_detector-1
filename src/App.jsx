@@ -171,16 +171,26 @@ export default function App() {
       if (!iframeLoaded) {
         if (!headerAnalysis.hasXFO && !headerAnalysis.hasCSP) {
           vulnerable = true;
-          reason = "Page could not be rendered and missing both XFO and CSP.";
+          reason = "Page could not be rendered in an iframe and missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
+        } else {
+          vulnerable = false;
+          reason = "Page could not be rendered in an iframe due to cross-origin restrictions, but has at least one security header.";
+        }
+      } else {
+        if (!headerAnalysis.hasXFO) {
+          vulnerable = true;
+          reason = "Page loaded in iframe and missing X-Frame-Options header. Vulnerable to clickjacking.";
+        } else if (!headerAnalysis.hasCSP) {
+          vulnerable = false;
+          reason = "Page loaded in iframe but X-Frame-Options is present. Missing CSP frame-ancestors.";
         } else if (headerAnalysis.frameAncestors && !headerAnalysis.allowsOurOrigin) {
           vulnerable = false;
           reason = `Page blocked iframe load and CSP restricts to: ${headerAnalysis.frameAncestors}`;
         } else {
           vulnerable = false;
-          reason = "Page couldn't load, but has security headers.";
+          reason = "Page loaded in iframe but has both XFO and CSP headers. Should be protected.";
         }
       }
-      
 
       setTestResults({
         isVisible: true,
@@ -192,7 +202,6 @@ export default function App() {
         isVulnerable: vulnerable,
         reason,
         rawHeaders: JSON.stringify(headers, null, 2),
-        fullResponse: res.data.data || "",
       });
 
       setResult(res.data);
@@ -455,12 +464,6 @@ export default function App() {
                 <div className="bg-black text-green-300 text-xs p-3 rounded overflow-auto max-h-40 font-mono mb-2 text-left">
                   <strong className="text-lime-400">Raw Headers:</strong>
                   <pre>{testResults.rawHeaders}</pre>
-                </div>
-              )}
-              {testResults.fullResponse && (
-                <div className="bg-black text-green-200 text-xs p-3 rounded overflow-auto max-h-60 font-mono mb-2 text-left">
-                  <strong className="text-lime-400">POST Response Body:</strong>
-                  <pre>{testResults.fullResponse}</pre>
                 </div>
               )}
               <div className="flex justify-between items-center text-xs mt-2">
