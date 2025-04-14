@@ -173,40 +173,33 @@ export default function App() {
       let reason = "";
 
       if (!iframeLoaded) {
-        if (!headerAnalysis.hasXFO && !headerAnalysis.hasCSP) {
-          vulnerable = true;
-          reason =
-            "Page could not be rendered in an iframe and is missing both X-Frame-Options and CSP headers. Vulnerable to clickjacking.";
-        } else if (!headerAnalysis.hasXFO && headerAnalysis.hasCSP) {
-          vulnerable = false;
-          reason =
-            "Page could not be rendered in an iframe. X-Frame-Options is missing, but CSP is present and may be preventing embedding.";
-        } else if (
+        if (
           headerAnalysis.frameAncestors &&
           !headerAnalysis.allowsOurOrigin
         ) {
           vulnerable = false;
           reason = `Page blocked iframe load and CSP restricts to: ${headerAnalysis.frameAncestors}`;
+        } else if (!headerAnalysis.hasXFO && headerAnalysis.hasCSP) {
+          vulnerable = false;
+          reason =
+            "Page could not be rendered in an iframe. X-Frame-Options is missing, but CSP is present and may be preventing embedding.";
         } else {
           vulnerable = false;
           reason =
-            "Page could not be rendered in an iframe due to cross-origin restrictions, but has at least one security header.";
+            "Page could not be rendered in an iframe, but it is likely blocked by server-level configuration or other security controls.";
         }
       } else {
-        if (!headerAnalysis.hasXFO) {
-          vulnerable = true;
-          reason =
-            "Page loaded in iframe and is missing X-Frame-Options header. Vulnerable to clickjacking.";
-        } else if (!headerAnalysis.hasCSP) {
+        // iframeLoaded === true
+        if (headerAnalysis.frameAncestors && !headerAnalysis.allowsOurOrigin) {
           vulnerable = false;
-          reason =
-            "Page loaded in iframe and has X-Frame-Options, but is missing CSP frame-ancestors.";
+          reason = `Page loaded in iframe, but CSP should have blocked it. Possible CSP misconfiguration: ${headerAnalysis.frameAncestors}`;
         } else {
           vulnerable = false;
           reason =
-            "Page loaded in iframe and has both X-Frame-Options and CSP frame-ancestors. Should be protected.";
+            "Page loaded in iframe. It may allow embedding intentionally or lacks restrictions. Not considered vulnerable.";
         }
       }
+      
 
       setTestResults({
         isVisible: true,
