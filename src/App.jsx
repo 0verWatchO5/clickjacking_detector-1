@@ -518,6 +518,8 @@
 //   );
 // }
 import React from 'react';
+import "./Clickjacking.css";
+import "./App.css";
 
 const ClickjackingGuide = () => {
   return (
