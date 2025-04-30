@@ -517,16 +517,14 @@
 //     </div>
 //   );
 // }
-
-import React from "react";
-import "./ClickjackingGuide.css"; // Optional: move styles here
+import React from 'react';
 
 const ClickjackingGuide = () => {
   return (
-    <div>
+    <div className="bg-[#4d0c26] text-[#f3cda2] font-sans leading-relaxed min-h-screen">
       {/* Logo */}
       <a
-        className="logo"
+        className="fixed top-4 right-5 z-[999]"
         href="https://quasarcybertech.com"
         target="_blank"
         rel="noopener noreferrer"
@@ -534,10 +532,12 @@ const ClickjackingGuide = () => {
         <img
           src="https://quasarcybertech.com/wp-content/uploads/2024/06/fulllogo_transparent_nobuffer.png"
           alt="Quasar Cybertech Logo"
+          className="h-[50px] max-w-[160px] object-contain"
         />
       </a>
 
-      <div className="footer-note">
+      {/* Footer Note */}
+      <div className="fixed bottom-2 right-2 bg-white/5 p-2 rounded-lg text-[10px] font-medium text-[#f3cda2] text-center flex flex-col items-center gap-[2px] shadow-md backdrop-blur-sm">
         <span>Made</span>
         <span>with</span>
         <span>❤️</span>
@@ -546,94 +546,72 @@ const ClickjackingGuide = () => {
           <img
             src="https://upload.wikimedia.org/wikipedia/en/4/41/Flag_of_India.svg"
             alt="India Flag"
+            className="h-[10px] inline-block mt-[2px]"
           />
         </span>
       </div>
 
-      <div className="container">
-        <h1>A Comprehensive Guide to Fix Clickjacking</h1>
-        <p>
-          To address clickjacking effectively, it's important to first
-          understand its root cause. Clickjacking occurs when a malicious
-          third-party website embeds your application within an iframe, tricking
-          users into interacting with hidden elements. The primary way to
-          prevent this is by explicitly instructing browsers not to allow your
-          website to be embedded in iframes.
+      {/* Main Content */}
+      <div className="w-[80%] mx-auto mt-8 bg-[#66182f] p-10 rounded-lg shadow-lg">
+        <h1 className="text-white border-b-2 border-[#ff7b00] pb-4 mb-6 text-2xl font-bold">
+          A Comprehensive Guide to Fix Clickjacking
+        </h1>
+
+        <p className="mb-6 text-base">
+          To address clickjacking effectively, it's important to first understand its root cause. Clickjacking occurs when a malicious third-party website embeds your application within an iframe, tricking users into interacting with hidden elements. The primary way to prevent this is by explicitly instructing browsers not to allow your website to be embedded in iframes.
         </p>
-        <p>
-          This comprehensive guide is designed for developers and system
-          administrators seeking effective ways to mitigate clickjacking
-          vulnerabilities. It covers a range of solutions with practical code
-          snippets and configuration examples across multiple programming
-          languages, web servers, and frameworks.
+        <p className="mb-6 text-base">
+          This comprehensive guide is designed for developers and system administrators seeking effective ways to mitigate clickjacking vulnerabilities. It covers a range of solutions with practical code snippets and configuration examples across multiple programming languages, web servers, and frameworks.
         </p>
-        <p>There are several strategies to defend against clickjacking:</p>
-        <ul>
+        <p className="mb-6 text-base">There are several strategies to defend against clickjacking:</p>
+        <ul className="list-disc list-inside mb-6">
           <li>
-            Setting HTTP response headers: <strong>X-Frame-Options</strong> and{" "}
-            <strong>Content-Security-Policy</strong>
+            Setting HTTP response headers:{" "}
+            <strong className="text-white font-semibold">X-Frame-Options</strong> and{" "}
+            <strong className="text-white font-semibold">Content-Security-Policy</strong>
           </li>
           <li>Using JavaScript-based frame-busting techniques</li>
         </ul>
-        <p>
-          This guide provides detailed instructions and code/configuration
-          snippets for various languages and environments to help fix the
-          clickjacking vulnerability.
+        <p className="mb-6 text-base">
+          This guide provides detailed instructions and code/configuration snippets for various languages and environments to help fix the clickjacking vulnerability.
         </p>
 
-        <h2>X-Frame-Options</h2>
-        <p>
-          X-Frame-Options is an HTTP response header that tells the browser
-          whether the content of the site is allowed to be embedded in an
-          iframe.
-        </p>
-        <p>Values:</p>
-        <ul>
-          <li>
-            <strong>DENY:</strong> Prevents all domains from framing the
-            content.
-          </li>
-          <code>X-Frame-Options: DENY</code>
-          <li>
-            <strong>SAMEORIGIN:</strong> Allows the page to be embedded only by
-            pages from the same origin.
-          </li>
-          <code>X-Frame-Options: SAMEORIGIN</code>
-          <li className="obsolete">
-            <strong>ALLOW-FROM uri:</strong> Allows a specific URI to frame the
-            page (obsolete and unsupported in modern browsers).
-          </li>
+        <h2 className="text-white border-b-2 border-[#ff7b00] pb-4 mt-10 mb-6 text-xl font-semibold">
+          X-Frame-Options
+        </h2>
+        <p className="mb-6 text-base">X-Frame-Options is an HTTP response header that tells the browser whether the content of the site is allowed to be embedded in an iframe.</p>
+        <ul className="list-disc list-inside mb-6">
+          <li><strong className="text-white font-semibold">DENY:</strong> Prevents all domains from framing the content.</li>
+          <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">X-Frame-Options: DENY</pre>
+          <li><strong className="text-white font-semibold">SAMEORIGIN:</strong> Allows the page to be embedded only by pages from the same origin.</li>
+          <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">X-Frame-Options: SAMEORIGIN</pre>
+          <li className="italic text-[#b98284]"><strong>ALLOW-FROM uri:</strong> Allows a specific URI to frame the page (obsolete and unsupported in modern browsers).</li>
         </ul>
-        <p className="note">
-          ⚠️ Note: Modern browsers now prefer using the Content-Security-Policy
-          header with the frame-ancestors directive.
-        </p>
 
-        <h2>Content-Security-Policy</h2>
-        <p>
-          The Content-Security-Policy header is more flexible and widely
-          supported. The directive <strong>frame-ancestors</strong> defines
-          which sources are allowed to embed the content in a frame.
+        <div className="bg-[#7a2b3d] border border-[#ffba73] rounded p-4 text-[#ffe4c2] mb-6">
+          ⚠️ Note: Modern browsers now prefer using the Content-Security-Policy header with the frame-ancestors directive.
+        </div>
+
+        <h2 className="text-white border-b-2 border-[#ff7b00] pb-4 mt-10 mb-6 text-xl font-semibold">
+          Content-Security-Policy
+        </h2>
+        <p className="mb-6 text-base">
+          The Content-Security-Policy header is more flexible and widely supported. The directive <strong className="text-white font-semibold">frame-ancestors</strong> defines which sources are allowed to embed the content in a frame.
         </p>
-        <p>Examples:</p>
-        <ul>
+        <ul className="list-disc list-inside mb-6">
           <li>Disallow all framing:</li>
-          <code>Content-Security-Policy: frame-ancestors 'none'</code>
+          <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">Content-Security-Policy: frame-ancestors 'none'</pre>
           <li>Allow framing by the same origin only:</li>
-          <code>Content-Security-Policy: frame-ancestors 'self'</code>
+          <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">Content-Security-Policy: frame-ancestors 'self'</pre>
           <li>Allow a specific domain:</li>
-          <code>
-            Content-Security-Policy: frame-ancestors https://google.com
-          </code>
+          <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">Content-Security-Policy: frame-ancestors https://google.com</pre>
         </ul>
 
-        <h2>Frame-Busting (JavaScript-Based)</h2>
-        <p>
-          This technique uses client-side JavaScript to prevent the page from
-          being loaded in an iframe.
-        </p>
-        <code>{`
-<style>
+        <h2 className="text-white border-b-2 border-[#ff7b00] pb-4 mt-10 mb-6 text-xl font-semibold">
+          Frame-Busting (JavaScript-Based)
+        </h2>
+        <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">
+{`<style>
   html { display: none; }
 </style>
 <script>
@@ -642,70 +620,78 @@ const ClickjackingGuide = () => {
   } else {
     top.location = self.location;
   }
-</script>
-        `}</code>
+</script>`}
+        </pre>
 
-        <h2>Code Snippets</h2>
-        <h3>NodeJS</h3>
-        <code>{`response.setHeader("X-Frame-Options", "DENY");
-response.setHeader("Content-Security-Policy", "frame-ancestors 'none'");`}</code>
+        <h2 className="text-white border-b-2 border-[#ff7b00] pb-4 mt-10 mb-6 text-xl font-semibold">Code Snippets</h2>
+        <h3 className="text-white font-semibold mt-6">NodeJS</h3>
+        <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">
+{`response.setHeader("X-Frame-Options", "DENY");
+response.setHeader("Content-Security-Policy", "frame-ancestors 'none'");`}
+        </pre>
 
-        <h3>Java</h3>
-        <code>{`public void doGet(HttpServletRequest request, HttpServletResponse response) {
+        <h3 className="text-white font-semibold mt-6">Java</h3>
+        <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">
+{`public void doGet(HttpServletRequest request, HttpServletResponse response) {
     response.addHeader("X-Frame-Options", "DENY");
     response.addHeader("Content-Security-Policy", "frame-ancestors 'none'");
-}`}</code>
+}`}
+        </pre>
 
-        <h3>PHP</h3>
-        <code>{`header("X-Frame-Options: DENY");
-header("Content-Security-Policy: frame-ancestors 'none'");`}</code>
+        <h3 className="text-white font-semibold mt-6">PHP</h3>
+        <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">
+{`header("X-Frame-Options: DENY");
+header("Content-Security-Policy: frame-ancestors 'none'");`}
+        </pre>
 
-        <h2>Web Server & Framework Configurations</h2>
-        <h3>Apache</h3>
-        <p>Enable headers module:</p>
-        <code>{`a2enmod headers
-sudo service apache2 restart`}</code>
+        <h2 className="text-white border-b-2 border-[#ff7b00] pb-4 mt-10 mb-6 text-xl font-semibold">
+          Web Server & Framework Configurations
+        </h2>
 
-        <p>Edit virtual host configuration (e.g., 000-default.conf):</p>
-        <code>{`<VirtualHost *:80>
+        <h3 className="text-white font-semibold mt-6">Apache</h3>
+        <p className="mb-2">Enable headers module:</p>
+        <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">
+{`a2enmod headers
+sudo service apache2 restart`}
+        </pre>
+
+        <p className="mb-2">Edit virtual host configuration:</p>
+        <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">
+{`<VirtualHost *:80>
     Header set X-Frame-Options "DENY"
     Header set Content-Security-Policy "frame-ancestors 'none'"
-</VirtualHost>`}</code>
+</VirtualHost>`}
+        </pre>
 
-        <p>Restart Apache:</p>
-        <code>sudo service apache2 restart</code>
+        <p className="mb-2">Restart Apache:</p>
+        <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">sudo service apache2 restart</pre>
 
-        <h3>Nginx</h3>
-        <p>
-          Edit your site configuration (e.g.,
-          /etc/nginx/sites-available/default):
-        </p>
-        <code>{`server {
+        <h3 className="text-white font-semibold mt-6">Nginx</h3>
+        <p className="mb-2">Edit your site configuration:</p>
+        <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">
+{`server {
     add_header X-Frame-Options "DENY";
     add_header Content-Security-Policy "frame-ancestors 'none'";
-}`}</code>
+}`}
+        </pre>
 
-        <p>Restart Nginx:</p>
-        <code>sudo service nginx restart</code>
+        <p className="mb-2">Restart Nginx:</p>
+        <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">sudo service nginx restart</pre>
 
-        <h3>WordPress</h3>
-        <p>Edit the wp-config.php file:</p>
-        <code>{`header('X-Frame-Options: SAMEORIGIN');
-header("Content-Security-Policy: frame-ancestors 'none'");`}</code>
+        <h3 className="text-white font-semibold mt-6">WordPress</h3>
+        <p className="mb-2">Edit the wp-config.php file:</p>
+        <pre className="bg-[#5e1e33] text-white p-4 rounded border-l-4 border-white text-sm overflow-x-auto my-4">
+{`header('X-Frame-Options: SAMEORIGIN');
+header("Content-Security-Policy: frame-ancestors 'none'");`}
+        </pre>
 
-        <p className="note">
-          📌 Note: Some managed WordPress hosting providers may restrict adding
-          headers via PHP. Consider setting these headers via .htaccess or the
-          server configuration if possible.
-        </p>
+        <div className="bg-[#7a2b3d] border border-[#ffba73] rounded p-4 text-[#ffe4c2] mb-6">
+          📌 Note: Some managed WordPress hosting providers may restrict adding headers via PHP. Consider setting these headers via .htaccess or the server configuration if possible.
+        </div>
 
-        <h2>Conclusion</h2>
-        <p>
-          Clickjacking can have serious implications, but it can be effectively
-          mitigated using proper HTTP response headers and JavaScript.
-          Implementing a combination of <strong>X-Frame-Options</strong>,{" "}
-          <strong>Content-Security-Policy</strong>, and frame-busting scripts
-          can ensure robust protection for your web applications.
+        <h2 className="text-white border-b-2 border-[#ff7b00] pb-4 mt-10 mb-6 text-xl font-semibold">Conclusion</h2>
+        <p className="mb-6 text-base">
+          Clickjacking can have serious implications, but it can be effectively mitigated using proper HTTP response headers and JavaScript. Implementing a combination of <strong className="text-white font-semibold">X-Frame-Options</strong>, <strong className="text-white font-semibold">Content-Security-Policy</strong>, and frame-busting scripts can ensure robust protection for your web applications.
         </p>
       </div>
     </div>
@@ -713,3 +699,5 @@ header("Content-Security-Policy: frame-ancestors 'none'");`}</code>
 };
 
 export default ClickjackingGuide;
+
+
