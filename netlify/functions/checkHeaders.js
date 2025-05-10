@@ -12,21 +12,20 @@ exports.handler = async (event) => {
       };
     }
 
-    // Extract hostname to resolve IP
     const { hostname } = new URL(url);
     let ip = 'Unavailable';
     try {
       const addresses = await dns.lookup(hostname);
       ip = addresses.address;
-    } catch (err) {
+    } catch {
       ip = 'Could not resolve IP';
     }
 
-    // Make HEAD request to fetch headers
-    const response = await axios.head(url, {
+    // Perform POST request with default dummy payload
+    const response = await axios.post(url, { test: "quasar_clickjacking_probe" }, {
       maxRedirects: 5,
       validateStatus: () => true,
-      timeout: 5000
+      timeout: 8000,
     });
 
     const headers = Object.fromEntries(
@@ -37,13 +36,17 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({
         headers,
-        ip
+        ip,
+        status: response.status,
+        data: typeof response.data === "string"
+          ? response.data.slice(0, 3000)
+          : JSON.stringify(response.data).slice(0, 3000)
       })
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to fetch headers or resolve IP' })
+      body: JSON.stringify({ error: 'POST request failed or response too large' })
     };
   }
 };
